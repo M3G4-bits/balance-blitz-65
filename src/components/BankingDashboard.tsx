@@ -1,10 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -26,11 +23,9 @@ interface Transaction {
 }
 
 export const BankingDashboard = () => {
+  const navigate = useNavigate();
   const [balance, setBalance] = useState(12547.83);
   const [showBalance, setShowBalance] = useState(true);
-  const [isTransferOpen, setIsTransferOpen] = useState(false);
-  const [transferAmount, setTransferAmount] = useState("");
-  const [transferRecipient, setTransferRecipient] = useState("");
   const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: "1",
@@ -55,53 +50,6 @@ export const BankingDashboard = () => {
       date: new Date(2024, 6, 23),
     }
   ]);
-
-  const { toast } = useToast();
-
-  const handleTransfer = () => {
-    const amount = parseFloat(transferAmount);
-    if (!amount || amount <= 0 || !transferRecipient) {
-      toast({
-        title: "Invalid Transfer",
-        description: "Please enter a valid amount and recipient.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (amount > balance) {
-      toast({
-        title: "Insufficient Funds",
-        description: "Transfer amount exceeds available balance.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Create new transaction
-    const newTransaction: Transaction = {
-      id: Date.now().toString(),
-      type: "transfer",
-      amount: -amount,
-      description: `Transfer to ${transferRecipient}`,
-      date: new Date(),
-      recipient: transferRecipient
-    };
-
-    // Update balance and transactions
-    setBalance(prev => prev - amount);
-    setTransactions(prev => [newTransaction, ...prev]);
-    
-    // Reset form and close dialog
-    setTransferAmount("");
-    setTransferRecipient("");
-    setIsTransferOpen(false);
-
-    toast({
-      title: "Transfer Successful",
-      description: `$${amount.toFixed(2)} transferred to ${transferRecipient}`,
-    });
-  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -147,46 +95,13 @@ export const BankingDashboard = () => {
                 {showBalance ? formatCurrency(balance) : "••••••"}
               </div>
               <div className="flex space-x-3">
-                <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex-1 bg-primary hover:bg-primary/90">
-                      <ArrowUpRight className="mr-2 h-4 w-4" />
-                      Transfer
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-card border-border">
-                    <DialogHeader>
-                      <DialogTitle>Transfer Money</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="recipient">Recipient</Label>
-                        <Input
-                          id="recipient"
-                          placeholder="Enter recipient name"
-                          value={transferRecipient}
-                          onChange={(e) => setTransferRecipient(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="amount">Amount</Label>
-                        <Input
-                          id="amount"
-                          type="number"
-                          placeholder="0.00"
-                          value={transferAmount}
-                          onChange={(e) => setTransferAmount(e.target.value)}
-                        />
-                      </div>
-                      <Button 
-                        onClick={handleTransfer} 
-                        className="w-full bg-primary hover:bg-primary/90"
-                      >
-                        Send Transfer
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button 
+                  className="flex-1 bg-primary hover:bg-primary/90"
+                  onClick={() => navigate("/transfer")}
+                >
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  Transfer
+                </Button>
                 
                 <Button variant="outline" className="flex-1">
                   <ArrowDownLeft className="mr-2 h-4 w-4" />
@@ -199,14 +114,20 @@ export const BankingDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all">
+          <Card 
+            className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all"
+            onClick={() => navigate("/pay-bills")}
+          >
             <CardContent className="p-4 text-center">
               <CreditCard className="h-6 w-6 mx-auto mb-2 text-primary" />
               <p className="text-sm font-medium">Pay Bills</p>
             </CardContent>
           </Card>
           
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all">
+          <Card 
+            className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all"
+            onClick={() => navigate("/savings")}
+          >
             <CardContent className="p-4 text-center">
               <PiggyBank className="h-6 w-6 mx-auto mb-2 text-accent" />
               <p className="text-sm font-medium">Savings</p>
@@ -220,7 +141,10 @@ export const BankingDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all">
+          <Card 
+            className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all"
+            onClick={() => navigate("/settings")}
+          >
             <CardContent className="p-4 text-center">
               <Settings className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm font-medium">Settings</p>
