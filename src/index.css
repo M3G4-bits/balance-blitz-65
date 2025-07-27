@@ -112,3 +112,30 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .bg-banking-gradient {
+    background: var(--banking-gradient);
+  }
+
+  .backdrop-blur-glass {
+    backdrop-filter: blur(16px);
+  }
+
+  .shadow-glass {
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  .shadow-balance-glow {
+    text-shadow: 0 0 30px hsl(var(--primary) / 0.3);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

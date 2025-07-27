@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,27 +11,45 @@ import { useNavigate } from "react-router-dom";
 export default function Transfer() {
   const [transferAmount, setTransferAmount] = useState("");
   const [transferRecipient, setTransferRecipient] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [sortCode, setSortCode] = useState("");
+  const [description, setDescription] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleTransfer = () => {
     const amount = parseFloat(transferAmount);
-    if (!amount || amount <= 0 || !transferRecipient) {
+    if (!amount || amount <= 0 || !transferRecipient || !accountNumber || !bankName || !sortCode) {
       toast({
         title: "Invalid Transfer",
-        description: "Please enter a valid amount and recipient.",
+        description: "Please fill in all required fields.",
         variant: "destructive"
       });
       return;
     }
 
-    toast({
-      title: "Transfer Successful",
-      description: `$${amount.toFixed(2)} transferred to ${transferRecipient}`,
-    });
+    // Validate account number (10 digits)
+    if (accountNumber.length !== 10 || !/^\d+$/.test(accountNumber)) {
+      toast({
+        title: "Invalid Account Number",
+        description: "Account number must be exactly 10 digits.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    // Navigate back to dashboard
-    navigate("/");
+    // Navigate to confirmation page with transfer data
+    navigate("/transfer/confirm", {
+      state: {
+        amount,
+        recipient: transferRecipient,
+        accountNumber,
+        bankName,
+        sortCode,
+        description
+      }
+    });
   };
 
   return (
@@ -52,15 +71,50 @@ export default function Transfer() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <Label htmlFor="recipient">Recipient</Label>
+              <Label htmlFor="recipient">Recipient Name</Label>
               <Input
                 id="recipient"
-                placeholder="Enter recipient name or email"
+                placeholder="Enter recipient name"
                 value={transferRecipient}
                 onChange={(e) => setTransferRecipient(e.target.value)}
                 className="mt-2"
               />
             </div>
+
+            <div>
+              <Label htmlFor="accountNumber">Account Number</Label>
+              <Input
+                id="accountNumber"
+                placeholder="Enter 10-digit account number"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                className="mt-2"
+                maxLength={10}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="bankName">Bank Name</Label>
+              <Input
+                id="bankName"
+                placeholder="Enter bank name"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="sortCode">Sort Code</Label>
+              <Input
+                id="sortCode"
+                placeholder="Enter sort code"
+                value={sortCode}
+                onChange={(e) => setSortCode(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
             <div>
               <Label htmlFor="amount">Amount</Label>
               <Input
@@ -72,11 +126,14 @@ export default function Transfer() {
                 className="mt-2"
               />
             </div>
+
             <div>
-              <Label htmlFor="note">Note (Optional)</Label>
-              <Input
-                id="note"
-                placeholder="What's this for?"
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="What's this transfer for?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 className="mt-2"
               />
             </div>
