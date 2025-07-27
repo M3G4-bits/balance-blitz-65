@@ -18,7 +18,20 @@ export default {
 			}
 		},
 		extend: {
+			backgroundImage: {
+				'banking-gradient': 'var(--banking-gradient)',
+			},
+			boxShadow: {
+				'balance-glow': 'var(--balance-glow)',
+				'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+			},
+			backdropBlur: {
+				'glass': '4px',
+			},
 			colors: {
+				'glass-bg': 'hsl(var(--glass-bg))',
+				'success-green': 'hsl(var(--success-green))',
+				'warning-orange': 'hsl(var(--warning-orange))',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
