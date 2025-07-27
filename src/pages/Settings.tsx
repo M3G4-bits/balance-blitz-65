@@ -4,11 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, User, Shield, Bell, CreditCard, HelpCircle, LogOut } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, User, Shield, Bell, CreditCard, HelpCircle, LogOut, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useBanking, countries } from "@/contexts/BankingContext";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { country, setCountry } = useBanking();
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
@@ -69,13 +72,53 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="h-5 w-5 text-primary" />
-                <span>Security</span>
-              </CardTitle>
-            </CardHeader>
+        <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Globe className="h-5 w-5 text-primary" />
+              <span>Region & Currency</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Current Region</p>
+                <p className="text-sm text-muted-foreground">{country.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">{country.currencySymbol} {country.currency}</p>
+                <p className="text-sm text-muted-foreground">Currency</p>
+              </div>
+            </div>
+            <Separator />
+            <div className="space-y-2">
+              <Label htmlFor="country">Change Country & Currency</Label>
+              <Select value={country.code} onValueChange={(value) => {
+                const selectedCountry = countries.find(c => c.code === value);
+                if (selectedCountry) setCountry(selectedCountry);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      {country.name} ({country.currencySymbol} {country.currency})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <span>Security</span>
+            </CardTitle>
+          </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>

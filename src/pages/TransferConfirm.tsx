@@ -2,11 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useBanking } from "@/contexts/BankingContext";
 
 export default function TransferConfirm() {
   const navigate = useNavigate();
   const location = useLocation();
   const transferData = location.state;
+  const { setBalance, balance, addTransaction, formatCurrency } = useBanking();
 
   if (!transferData) {
     navigate("/transfer");
@@ -16,14 +18,19 @@ export default function TransferConfirm() {
   const { amount, recipient, accountNumber, bankName, sortCode, description } = transferData;
 
   const handleConfirm = () => {
+    // Deduct amount from balance
+    setBalance(balance - amount);
+    
+    // Add transaction to history
+    addTransaction({
+      type: 'transfer',
+      amount: -amount,
+      description: `Transfer to ${recipient}`,
+      date: new Date(),
+      recipient: recipient
+    });
+    
     navigate("/transfer/success", { state: transferData });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
   };
 
   return (

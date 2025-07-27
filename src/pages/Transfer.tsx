@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useBanking } from "@/contexts/BankingContext";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -16,6 +17,7 @@ export default function Transfer() {
   const [sortCode, setSortCode] = useState("");
   const [description, setDescription] = useState("");
   const { toast } = useToast();
+  const { balance, formatCurrency } = useBanking();
   const navigate = useNavigate();
 
   const handleTransfer = () => {
@@ -34,6 +36,16 @@ export default function Transfer() {
       toast({
         title: "Invalid Account Number",
         description: "Account number must be exactly 10 digits.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if user has sufficient balance
+    if (amount > balance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You only have ${formatCurrency(balance)} available.`,
         variant: "destructive"
       });
       return;

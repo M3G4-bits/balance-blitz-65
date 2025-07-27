@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Download, Share } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { useBanking } from "@/contexts/BankingContext";
 
 export default function TransferSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
   const transferData = location.state;
+  const { formatCurrency } = useBanking();
 
   useEffect(() => {
     if (!transferData) {
@@ -20,13 +22,6 @@ export default function TransferSuccess() {
   }
 
   const { amount, recipient, accountNumber, bankName } = transferData;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
 
   const transactionId = `TXN${Date.now()}`;
 
