@@ -12,7 +12,7 @@ interface Message {
   timestamp: Date;
 }
 
-export const CustomerSupportChat = () => {
+const CustomerSupportChat = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -126,3 +126,5 @@ export const CustomerSupportChat = () => {
     </>
   );
 };
+
+export default CustomerSupportChat;
