@@ -11,6 +11,9 @@ import Transfer from "./pages/Transfer";
 import TransferConfirm from "./pages/TransferConfirm";
 import TransferSuccess from "./pages/TransferSuccess";
 import TransferFailure from "./pages/TransferFailure";
+import Deposit from "./pages/Deposit";
+import AccountSummary from "./pages/AccountSummary";
+import TravelLeisure from "./pages/TravelLeisure";
 import Savings from "./pages/Savings";
 import PayBills from "./pages/PayBills";
 import Settings from "./pages/Settings";
@@ -34,10 +37,13 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/my-account" element={<MyAccount />} />
-              <Route path="/transfer" element={<Transfer />} />
-              <Route path="/transfer/confirm" element={<TransferConfirm />} />
-              <Route path="/transfer/success" element={<TransferSuccess />} />
-              <Route path="/transfer/failure" element={<TransferFailure />} />
+          <Route path="/transfer" element={<Transfer />} />
+          <Route path="/transfer/confirm" element={<TransferConfirm />} />
+          <Route path="/transfer/success" element={<TransferSuccess />} />
+          <Route path="/transfer/failure" element={<TransferFailure />} />
+          <Route path="/deposit" element={<Deposit />} />
+          <Route path="/account-summary" element={<AccountSummary />} />
+          <Route path="/travel-leisure" element={<TravelLeisure />} />
               <Route path="/savings" element={<Savings />} />
               <Route path="/pay-bills" element={<PayBills />} />
               <Route path="/settings" element={<Settings />} />

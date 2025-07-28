@@ -18,7 +18,10 @@ import {
   Shield,
   HeadphonesIcon,
   User,
-  LogOut
+  LogOut,
+  DollarSign,
+  ArrowLeftRight,
+  Plane
 } from "lucide-react";
 
 export const BankingDashboard = () => {
@@ -136,7 +139,11 @@ export const BankingDashboard = () => {
                   Transfer
                 </Button>
                 
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => navigate("/deposit")}
+                >
                   <ArrowDownLeft className="mr-2 h-4 w-4" />
                   Deposit
                 </Button>
@@ -247,6 +254,39 @@ export const BankingDashboard = () => {
                 <User className="h-5 w-5 mx-auto mb-2 text-primary" />
                 <p className="text-xs font-medium">My Account</p>
                 <p className="text-[10px] text-muted-foreground">Profile</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              onClick={() => navigate("/account-summary")}
+            >
+              <CardContent className="p-3 text-center">
+                <DollarSign className="h-5 w-5 mx-auto mb-2 text-primary" />
+                <p className="text-xs font-medium">Account Summary</p>
+                <p className="text-[10px] text-muted-foreground">Overview</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              onClick={() => navigate("/transfer")}
+            >
+              <CardContent className="p-3 text-center">
+                <ArrowLeftRight className="h-5 w-5 mx-auto mb-2 text-accent" />
+                <p className="text-xs font-medium">Local Transfer</p>
+                <p className="text-[10px] text-muted-foreground">Send Money</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              onClick={() => navigate("/travel-leisure")}
+            >
+              <CardContent className="p-3 text-center">
+                <Plane className="h-5 w-5 mx-auto mb-2 text-green-600" />
+                <p className="text-xs font-medium">Travel & Leisure</p>
+                <p className="text-[10px] text-muted-foreground">Visa & Booking</p>
               </CardContent>
             </Card>
 

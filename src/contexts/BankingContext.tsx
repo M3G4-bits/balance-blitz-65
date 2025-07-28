@@ -8,6 +8,8 @@ interface Transaction {
   amount: number;
   description: string;
   date: Date;
+  created_at: string;
+  status: 'completed' | 'pending' | 'failed';
   recipient?: string;
 }
 
@@ -23,7 +25,7 @@ interface BankingContextType {
   transactions: Transaction[];
   country: Country;
   setBalance: (balance: number) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'created_at'>) => void;
   setCountry: (country: Country) => void;
   formatCurrency: (amount: number) => string;
 }
@@ -99,6 +101,8 @@ export const BankingProvider = ({ children }: { children: ReactNode }) => {
           amount: Number(tx.amount),
           description: tx.description,
           date: new Date(tx.created_at),
+          created_at: tx.created_at,
+          status: (tx.status || 'completed') as 'completed' | 'pending' | 'failed',
           recipient: tx.recipient,
         }));
         setTransactions(formattedTransactions);
@@ -130,7 +134,7 @@ export const BankingProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'created_at'>) => {
     if (!user) return;
 
     try {
@@ -143,22 +147,34 @@ export const BankingProvider = ({ children }: { children: ReactNode }) => {
           amount: transaction.amount,
           description: transaction.description,
           recipient: transaction.recipient,
+          status: transaction.status || 'completed',
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update local balance if it's a transfer
-      if (transaction.type === 'transfer' && transaction.amount < 0) {
-        const newBalance = balance + transaction.amount;
-        setBalance(newBalance);
-        
-        // Update balance in database
-        await supabase
-          .from('user_balances')
-          .update({ balance: newBalance })
-          .eq('user_id', user.id);
+      // Update local balance if transaction is successful and not pending/failed
+      if (transaction.status !== 'failed' && transaction.status !== 'pending') {
+        if (transaction.type === 'transfer' && transaction.amount < 0) {
+          const newBalance = balance + transaction.amount;
+          setBalance(newBalance);
+          
+          // Update balance in database
+          await supabase
+            .from('user_balances')
+            .update({ balance: newBalance })
+            .eq('user_id', user.id);
+        } else if (transaction.type === 'deposit' && transaction.amount > 0) {
+          const newBalance = balance + transaction.amount;
+          setBalance(newBalance);
+          
+          // Update balance in database
+          await supabase
+            .from('user_balances')
+            .update({ balance: newBalance })
+            .eq('user_id', user.id);
+        }
       }
 
       // Add to local transactions
@@ -168,6 +184,8 @@ export const BankingProvider = ({ children }: { children: ReactNode }) => {
         amount: transaction.amount,
         description: transaction.description,
         date: new Date(),
+        created_at: data.created_at,
+        status: transaction.status || 'completed',
         recipient: transaction.recipient,
       };
       setTransactions(prev => [newTransaction, ...prev]);

@@ -27,17 +27,19 @@ export default function TransferConfirm() {
   const { amount, recipient, accountNumber, bankName, sortCode, description } = transferData;
 
   const handleConfirm = async () => {
-    // Add transaction to history (this will also update balance)
+    // 50/50 chance of success or failure
+    const isSuccess = Math.random() >= 0.5;
+    const status = isSuccess ? 'completed' : 'pending';
+
+    // Add transaction to history
     await addTransaction({
       type: 'transfer',
       amount: -amount,
       description: `Transfer to ${recipient}`,
       date: new Date(),
-      recipient: recipient
+      recipient: recipient,
+      status: status
     });
-    
-    // 50/50 chance of success or failure
-    const isSuccess = Math.random() >= 0.5;
     
     if (isSuccess) {
       navigate("/transfer/success", { state: transferData });
