@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_number: string | null
@@ -127,9 +148,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_deposit: {
+        Args: {
+          target_account_number: string
+          deposit_amount: number
+          admin_user_id: string
+        }
+        Returns: Json
+      }
       generate_account_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -14,6 +14,7 @@ import TransferFailure from "./pages/TransferFailure";
 import Deposit from "./pages/Deposit";
 import AccountSummary from "./pages/AccountSummary";
 import TravelLeisure from "./pages/TravelLeisure";
+import AdminDeposit from "./pages/AdminDeposit";
 import Savings from "./pages/Savings";
 import PayBills from "./pages/PayBills";
 import Settings from "./pages/Settings";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/deposit" element={<Deposit />} />
           <Route path="/account-summary" element={<AccountSummary />} />
           <Route path="/travel-leisure" element={<TravelLeisure />} />
+          <Route path="/admin/deposit" element={<AdminDeposit />} />
               <Route path="/savings" element={<Savings />} />
               <Route path="/pay-bills" element={<PayBills />} />
               <Route path="/settings" element={<Settings />} />

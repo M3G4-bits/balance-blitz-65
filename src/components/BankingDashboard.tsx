@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { CustomerSupportChat } from "@/components/CustomerSupportChat";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -399,6 +400,7 @@ export const BankingDashboard = () => {
           </div>
         )}
       </div>
+      <CustomerSupportChat />
     </div>
   );
 };
