@@ -85,6 +85,8 @@ const MyAccount = () => {
           phone: profile.phone,
           country_code: profile.country_code,
           avatar_url: profile.avatar_url,
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) {
