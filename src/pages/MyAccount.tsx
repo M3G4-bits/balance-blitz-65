@@ -37,6 +37,7 @@ const MyAccount = () => {
     avatar_url: '',
     country_code: 'US'
   });
+  const [countryLocked, setCountryLocked] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -59,6 +60,8 @@ const MyAccount = () => {
 
       if (data) {
         setProfile(data);
+        // Lock country if it's already been set to something other than default
+        setCountryLocked(data.country_code && data.country_code !== 'US');
       }
     } catch (error: any) {
       toast({
@@ -75,17 +78,41 @@ const MyAccount = () => {
     e.preventDefault();
     try {
       setLoading(true);
+      
+      // Check if country is already set and prevent changes
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('country_code')
+        .eq('user_id', user?.id)
+        .single();
+
+      const updateData: any = {
+        user_id: user?.id,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        email: profile.email,
+        phone: profile.phone,
+        avatar_url: profile.avatar_url,
+      };
+
+      // Only allow country change if it hasn't been set before or is still default
+      if (!existingProfile?.country_code || existingProfile.country_code === 'US') {
+        updateData.country_code = profile.country_code;
+      } else if (existingProfile.country_code !== profile.country_code) {
+        toast({
+          title: 'Country cannot be changed',
+          description: 'Your country/currency can only be set once for security reasons.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      } else {
+        updateData.country_code = profile.country_code;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user?.id,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          email: profile.email,
-          phone: profile.phone,
-          country_code: profile.country_code,
-          avatar_url: profile.avatar_url,
-        }, {
+        .upsert(updateData, {
           onConflict: 'user_id'
         });
 
@@ -243,10 +270,11 @@ const MyAccount = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
+                <Label htmlFor="country">Country/Currency</Label>
                 <Select
                   value={profile.country_code || 'US'}
                   onValueChange={(value) => setProfile({ ...profile, country_code: value })}
+                  disabled={countryLocked}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your country" />
@@ -259,6 +287,11 @@ const MyAccount = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {countryLocked && (
+                  <p className="text-xs text-muted-foreground">
+                    Country/currency can only be set once for security reasons
+                  </p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>

@@ -70,7 +70,7 @@ const Auth = () => {
       });
     } else {
       toast({
-        title: "Welcome to Plan B!",
+        title: "Welcome to Credit Stirling Bank PLC!",
         description: "Your account has been created successfully.",
       });
       navigate('/');
@@ -83,7 +83,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Plan B Banking</CardTitle>
+          <CardTitle className="text-2xl font-bold">Credit Stirling Bank PLC</CardTitle>
           <CardDescription>
             Access your account or create a new one
           </CardDescription>

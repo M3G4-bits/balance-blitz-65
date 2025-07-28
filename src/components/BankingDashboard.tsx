@@ -85,10 +85,10 @@ export const BankingDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">BalanceBlitz</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Credit Stirling Bank PLC</h1>
             <p className="text-muted-foreground">{getTimeGreeting()}, {userName}!</p>
             {accountNumber && (
-              <p className="text-sm text-muted-foreground">Account: {accountNumber}</p>
+              <p className="text-sm text-muted-foreground">Account: ****{accountNumber.slice(-4)}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -177,10 +177,10 @@ export const BankingDashboard = () => {
               </div>
             </div>
             <div className="mt-4 flex gap-3">
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/apply-loan")}>
                 Apply for Loan
               </Button>
-              <Button variant="outline" className="flex-1">
+              <Button variant="outline" className="flex-1" onClick={() => navigate("/increase-credit-line")}>
                 Increase Credit Line
               </Button>
             </div>
@@ -296,7 +296,10 @@ export const BankingDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start">
+            <Card 
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              onClick={() => navigate("/support")}
+            >
               <CardContent className="p-3 text-center">
                 <HeadphonesIcon className="h-5 w-5 mx-auto mb-2 text-primary" />
                 <p className="text-xs font-medium">Support</p>
@@ -387,7 +390,7 @@ export const BankingDashboard = () => {
                 {selectedTransaction.recipient && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Bank:</span>
-                    <span className="font-medium">{selectedTransaction.bank_name || 'BalanceBlitz Bank'}</span>
+                    <span className="font-medium">{selectedTransaction.bank_name || 'Credit Stirling Bank PLC'}</span>
                   </div>
                 )}
                 <div className="flex justify-between">

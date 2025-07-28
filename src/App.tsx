@@ -23,6 +23,9 @@ import VirtualCards from "./pages/VirtualCards";
 import Auth from "./pages/Auth";
 import MyAccount from "./pages/MyAccount";
 import History from "./pages/History";
+import ApplyLoan from "./pages/ApplyLoan";
+import IncreaseCreditLine from "./pages/IncreaseCreditLine";
+import Support from "./pages/Support";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +55,9 @@ const App = () => (
               <Route path="/kyc-status" element={<KYCStatus />} />
               <Route path="/virtual-cards" element={<VirtualCards />} />
               <Route path="/history" element={<History />} />
+              <Route path="/apply-loan" element={<ApplyLoan />} />
+              <Route path="/increase-credit-line" element={<IncreaseCreditLine />} />
+              <Route path="/support" element={<Support />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
