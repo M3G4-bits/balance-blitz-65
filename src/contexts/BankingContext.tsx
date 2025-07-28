@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthContext";
 
 interface Transaction {
   id: string;
@@ -46,39 +48,132 @@ export const useBanking = () => {
 };
 
 export const BankingProvider = ({ children }: { children: ReactNode }) => {
-  const [balance, setBalance] = useState(12547.83);
+  const { user } = useAuth();
+  const [balance, setBalance] = useState(0);
   const [country, setCountry] = useState<Country>(countries[0]); // Default to US
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: "1",
-      type: "transfer",
-      amount: -250.00,
-      description: "Transfer to John Doe",
-      date: new Date(2024, 6, 25),
-      recipient: "John Doe"
-    },
-    {
-      id: "2",
-      type: "deposit",
-      amount: 1200.00,
-      description: "Salary Deposit",
-      date: new Date(2024, 6, 24),
-    },
-    {
-      id: "3",
-      type: "payment",
-      amount: -89.99,
-      description: "Amazon Purchase",
-      date: new Date(2024, 6, 23),
-    }
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = {
-      ...transaction,
-      id: `TXN${Date.now()}`,
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
+  useEffect(() => {
+    if (user) {
+      fetchUserBalance();
+      fetchUserTransactions();
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserBalance = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_balances')
+        .select('balance, currency')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data) {
+        setBalance(Number(data.balance));
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    }
+  };
+
+  const fetchUserTransactions = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      if (data) {
+        const formattedTransactions = data.map(tx => ({
+          id: tx.id,
+          type: tx.type as 'transfer' | 'deposit' | 'withdrawal' | 'payment',
+          amount: Number(tx.amount),
+          description: tx.description,
+          date: new Date(tx.created_at),
+          recipient: tx.recipient,
+        }));
+        setTransactions(formattedTransactions);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('country_code')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data && data.country_code) {
+        const userCountry = countries.find(c => c.code === data.country_code);
+        if (userCountry) {
+          setCountry(userCountry);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    if (!user) return;
+
+    try {
+      // Insert transaction into database
+      const { data, error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          type: transaction.type,
+          amount: transaction.amount,
+          description: transaction.description,
+          recipient: transaction.recipient,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local balance if it's a transfer
+      if (transaction.type === 'transfer' && transaction.amount < 0) {
+        const newBalance = balance + transaction.amount;
+        setBalance(newBalance);
+        
+        // Update balance in database
+        await supabase
+          .from('user_balances')
+          .update({ balance: newBalance })
+          .eq('user_id', user.id);
+      }
+
+      // Add to local transactions
+      const newTransaction = {
+        id: data.id,
+        type: transaction.type,
+        amount: transaction.amount,
+        description: transaction.description,
+        date: new Date(),
+        recipient: transaction.recipient,
+      };
+      setTransactions(prev => [newTransaction, ...prev]);
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+    }
   };
 
   const formatCurrency = (amount: number) => {

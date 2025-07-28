@@ -4,18 +4,22 @@ import { CheckCircle, Download, Share } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useBanking } from "@/contexts/BankingContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function TransferSuccess() {
   const navigate = useNavigate();
   const location = useLocation();
   const transferData = location.state;
   const { formatCurrency } = useBanking();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!transferData) {
+    if (!user) {
+      navigate('/auth');
+    } else if (!transferData) {
       navigate("/");
     }
-  }, [transferData, navigate]);
+  }, [user, transferData, navigate]);
 
   if (!transferData) {
     return null;

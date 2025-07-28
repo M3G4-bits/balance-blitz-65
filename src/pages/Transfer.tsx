@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useBanking } from "@/contexts/BankingContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -18,7 +19,14 @@ export default function Transfer() {
   const [description, setDescription] = useState("");
   const { toast } = useToast();
   const { balance, formatCurrency } = useBanking();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
 
   const handleTransfer = () => {
     const amount = parseFloat(transferAmount);

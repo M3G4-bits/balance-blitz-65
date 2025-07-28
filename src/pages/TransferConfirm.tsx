@@ -3,12 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 export default function TransferConfirm() {
   const navigate = useNavigate();
   const location = useLocation();
   const transferData = location.state;
-  const { setBalance, balance, addTransaction, formatCurrency } = useBanking();
+  const { addTransaction, formatCurrency } = useBanking();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
 
   if (!transferData) {
     navigate("/transfer");
@@ -17,12 +26,9 @@ export default function TransferConfirm() {
 
   const { amount, recipient, accountNumber, bankName, sortCode, description } = transferData;
 
-  const handleConfirm = () => {
-    // Deduct amount from balance
-    setBalance(balance - amount);
-    
-    // Add transaction to history
-    addTransaction({
+  const handleConfirm = async () => {
+    // Add transaction to history (this will also update balance)
+    await addTransaction({
       type: 'transfer',
       amount: -amount,
       description: `Transfer to ${recipient}`,

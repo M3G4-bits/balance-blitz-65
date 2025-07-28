@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -13,13 +14,27 @@ import {
   Eye,
   EyeOff,
   Shield,
-  HeadphonesIcon
+  HeadphonesIcon,
+  User,
+  LogOut
 } from "lucide-react";
 
 export const BankingDashboard = () => {
   const navigate = useNavigate();
   const { balance, transactions, formatCurrency } = useBanking();
+  const { user, signOut } = useAuth();
   const [showBalance, setShowBalance] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
@@ -28,11 +43,16 @@ export const BankingDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">BalanceBlitz</h1>
-            <p className="text-muted-foreground">Welcome back, Alex Johnson</p>
+            <p className="text-muted-foreground">Welcome back!</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
-            <Settings className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
+              <Settings className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Balance Card */}
@@ -134,6 +154,17 @@ export const BankingDashboard = () => {
                 <CreditCard className="h-5 w-5 mx-auto mb-2 text-accent" />
                 <p className="text-xs font-medium">Virtual Cards</p>
                 <p className="text-[10px] text-muted-foreground">2 Active</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              onClick={() => navigate("/my-account")}
+            >
+              <CardContent className="p-3 text-center">
+                <User className="h-5 w-5 mx-auto mb-2 text-primary" />
+                <p className="text-xs font-medium">My Account</p>
+                <p className="text-[10px] text-muted-foreground">Profile</p>
               </CardContent>
             </Card>
 
