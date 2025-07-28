@@ -36,7 +36,18 @@ export default function TransferConfirm() {
       recipient: recipient
     });
     
-    navigate("/transfer/success", { state: transferData });
+    // 50/50 chance of success or failure
+    const isSuccess = Math.random() >= 0.5;
+    
+    if (isSuccess) {
+      navigate("/transfer/success", { state: transferData });
+    } else {
+      navigate("/transfer/failure", { state: transferData });
+    }
+  };
+
+  const handleCancel = () => {
+    navigate("/");
   };
 
   return (
@@ -58,6 +69,10 @@ export default function TransferConfirm() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="bg-secondary/50 p-4 rounded-lg space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">From Account:</span>
+                <span className="font-medium">Checking Account - ****1234</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
                 <span className="font-semibold text-2xl">{formatCurrency(amount)}</span>
@@ -95,16 +110,16 @@ export default function TransferConfirm() {
               <Button 
                 variant="outline" 
                 className="flex-1"
-                onClick={() => navigate("/transfer")}
+                onClick={handleCancel}
               >
-                Back to Edit
+                Cancel
               </Button>
               <Button 
                 onClick={handleConfirm} 
                 className="flex-1 bg-primary hover:bg-primary/90"
                 size="lg"
               >
-                Confirm Transfer
+                Proceed with Transfer
               </Button>
             </div>
           </CardContent>

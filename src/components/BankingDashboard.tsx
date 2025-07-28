@@ -27,6 +27,9 @@ export const BankingDashboard = () => {
   const { user, signOut } = useAuth();
   const [showBalance, setShowBalance] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -46,10 +49,23 @@ export const BankingDashboard = () => {
       
       if (data) {
         setAvatarUrl(data.avatar_url);
+        setUserName(data.first_name || 'User');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
+  };
+
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const handleTransactionClick = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setShowTransactionModal(true);
   };
 
   const handleSignOut = async () => {
@@ -64,7 +80,7 @@ export const BankingDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">BalanceBlitz</h1>
-            <p className="text-muted-foreground">Welcome back!</p>
+            <p className="text-muted-foreground">{getTimeGreeting()}, {userName}!</p>
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -125,6 +141,35 @@ export const BankingDashboard = () => {
                   Deposit
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Loans & Credit Section */}
+        <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+          <CardHeader>
+            <CardTitle>Loans & Credit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-secondary/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">Credit Score</h3>
+                <div className="text-3xl font-bold text-success-green">870</div>
+                <p className="text-sm text-muted-foreground">Excellent</p>
+              </div>
+              <div className="bg-secondary/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">Available Credit</h3>
+                <div className="text-2xl font-bold text-foreground">{formatCurrency(25000)}</div>
+                <p className="text-sm text-muted-foreground">Line of Credit</p>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <Button variant="outline" className="flex-1">
+                Apply for Loan
+              </Button>
+              <Button variant="outline" className="flex-1">
+                Increase Credit Line
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -225,7 +270,8 @@ export const BankingDashboard = () => {
               {transactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
+                  className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary/70 transition-colors"
+                  onClick={() => handleTransactionClick(transaction)}
                 >
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${
@@ -261,6 +307,57 @@ export const BankingDashboard = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Transaction Modal */}
+        {showTransactionModal && selectedTransaction && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="bg-card/95 backdrop-blur-glass border-border shadow-glass max-w-md w-full">
+              <CardHeader>
+                <CardTitle>Transaction Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount:</span>
+                  <span className={`font-semibold ${
+                    selectedTransaction.amount > 0 ? 'text-success-green' : 'text-destructive'
+                  }`}>
+                    {selectedTransaction.amount > 0 ? '+' : ''}{formatCurrency(selectedTransaction.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type:</span>
+                  <span className="font-medium">
+                    {selectedTransaction.amount > 0 ? 'Credit' : 'Debit'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span className="font-medium">{selectedTransaction.date.toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Time:</span>
+                  <span className="font-medium">{selectedTransaction.date.toLocaleTimeString()}</span>
+                </div>
+                {selectedTransaction.recipient && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bank:</span>
+                    <span className="font-medium">{selectedTransaction.bank_name || 'BalanceBlitz Bank'}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Description:</span>
+                  <span className="font-medium">{selectedTransaction.description}</span>
+                </div>
+                <Button 
+                  onClick={() => setShowTransactionModal(false)}
+                  className="w-full mt-4"
+                >
+                  Close
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
