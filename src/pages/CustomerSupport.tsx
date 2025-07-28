@@ -36,20 +36,8 @@ const CustomerSupport = () => {
   }, [user, navigate]);
 
   const fetchTickets = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('support_tickets')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setTickets(data || []);
-    } catch (error) {
-      console.error('Error fetching tickets:', error);
-    }
+    // Temporarily disabled until migration is complete
+    console.log('Support tickets feature will be available after database migration');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,37 +45,16 @@ const CustomerSupport = () => {
     if (!user || !subject.trim() || !message.trim()) return;
 
     setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('support_tickets')
-        .insert([
-          {
-            user_id: user.id,
-            subject: subject.trim(),
-            message: message.trim(),
-            status: 'open'
-          }
-        ]);
+    
+    // Temporarily show success message until migration is complete
+    toast({
+      title: "Feature Coming Soon",
+      description: "Support tickets will be available after database migration is complete.",
+    });
 
-      if (error) throw error;
-
-      toast({
-        title: "Ticket submitted",
-        description: "We'll get back to you within 24 hours.",
-      });
-
-      setSubject("");
-      setMessage("");
-      fetchTickets();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit ticket. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    setSubject("");
+    setMessage("");
+    setLoading(false);
   };
 
   const getStatusIcon = (status: string) => {
