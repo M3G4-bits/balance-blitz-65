@@ -32,6 +32,7 @@ export const BankingDashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [accountNumber, setAccountNumber] = useState<string>('');
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
 
@@ -47,13 +48,14 @@ export const BankingDashboard = () => {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('avatar_url, first_name, last_name')
+        .select('avatar_url, first_name, last_name, account_number')
         .eq('user_id', user?.id)
         .maybeSingle();
       
       if (data) {
         setAvatarUrl(data.avatar_url);
         setUserName(data.first_name || 'User');
+        setAccountNumber(data.account_number || '');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -85,6 +87,9 @@ export const BankingDashboard = () => {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">BalanceBlitz</h1>
             <p className="text-muted-foreground">{getTimeGreeting()}, {userName}!</p>
+            {accountNumber && (
+              <p className="text-sm text-muted-foreground">Account: {accountNumber}</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button 
