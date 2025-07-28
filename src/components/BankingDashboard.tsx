@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -24,12 +26,31 @@ export const BankingDashboard = () => {
   const { balance, transactions, formatCurrency } = useBanking();
   const { user, signOut } = useAuth();
   const [showBalance, setShowBalance] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
+    } else {
+      fetchProfile();
     }
   }, [user, navigate]);
+
+  const fetchProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url, first_name, last_name')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+      
+      if (data) {
+        setAvatarUrl(data.avatar_url);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -42,10 +63,23 @@ export const BankingDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">BalanceBlitz</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">BalanceBlitz</h1>
             <p className="text-muted-foreground">Welcome back!</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/my-account")}
+              className="relative"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={avatarUrl || ''} />
+                <AvatarFallback>
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
               <Settings className="h-5 w-5" />
             </Button>
@@ -77,7 +111,7 @@ export const BankingDashboard = () => {
               <div className="text-4xl font-bold text-foreground shadow-balance-glow">
                 {showBalance ? formatCurrency(balance) : "••••••"}
               </div>
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   className="flex-1 bg-primary hover:bg-primary/90"
                   onClick={() => navigate("/transfer")}
@@ -88,7 +122,7 @@ export const BankingDashboard = () => {
                 
                 <Button variant="outline" className="flex-1">
                   <ArrowDownLeft className="mr-2 h-4 w-4" />
-                  Receive
+                  Deposit
                 </Button>
               </div>
             </div>
@@ -97,7 +131,7 @@ export const BankingDashboard = () => {
 
         {/* Quick Actions Slider */}
         <div className="relative">
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-1">
             <Card 
               className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
               onClick={() => navigate("/pay-bills")}
@@ -118,7 +152,10 @@ export const BankingDashboard = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start">
+            <Card 
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              onClick={() => navigate("/history")}
+            >
               <CardContent className="p-3 text-center">
                 <History className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-xs font-medium">History</p>
