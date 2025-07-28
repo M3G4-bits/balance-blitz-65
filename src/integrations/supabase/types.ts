@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          account_number: string | null
           avatar_url: string | null
           country_code: string | null
           created_at: string
@@ -28,6 +29,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_number?: string | null
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
@@ -40,6 +42,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_number?: string | null
           avatar_url?: string | null
           country_code?: string | null
           created_at?: string
@@ -63,6 +66,7 @@ export type Database = {
           id: string
           recipient: string | null
           sort_code: string | null
+          status: string
           type: string
           user_id: string
         }
@@ -75,6 +79,7 @@ export type Database = {
           id?: string
           recipient?: string | null
           sort_code?: string | null
+          status?: string
           type: string
           user_id: string
         }
@@ -87,6 +92,7 @@ export type Database = {
           id?: string
           recipient?: string | null
           sort_code?: string | null
+          status?: string
           type?: string
           user_id?: string
         }
@@ -121,7 +127,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_account_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
