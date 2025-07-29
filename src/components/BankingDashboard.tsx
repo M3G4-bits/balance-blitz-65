@@ -6,14 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import CustomerSupportChat from "@/components/CustomerSupportChat"; // Customer support chat component
+import CustomerSupportChat from "@/components/CustomerSupportChat";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
   CreditCard, 
   PiggyBank,
   History,
-  Settings,
   Eye,
   EyeOff,
   Shield,
@@ -22,7 +23,8 @@ import {
   LogOut,
   DollarSign,
   ArrowLeftRight,
-  Plane
+  Plane,
+  Menu
 } from "lucide-react";
 
 export const BankingDashboard = () => {
@@ -80,39 +82,42 @@ export const BankingDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Credit Stirling Bank PLC</h1>
-            <p className="text-muted-foreground">{getTimeGreeting()}, {userName}!</p>
-            {accountNumber && (
-              <p className="text-sm text-muted-foreground">Account: ****{accountNumber.slice(-4)}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/my-account")}
-              className="relative"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={avatarUrl || ''} />
-                <AvatarFallback>
-                  <User className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
-              <Settings className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <div className="flex-1 bg-background bg-banking-gradient p-4 md:p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger />
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Credit Stirling Bank PLC</h1>
+                  <p className="text-muted-foreground">{getTimeGreeting()}, {userName}!</p>
+                  {accountNumber && (
+                    <p className="text-sm text-muted-foreground">Account: ****{accountNumber.slice(-4)}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => navigate("/my-account")}
+                  className="relative"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={avatarUrl || ''} />
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
 
         {/* Balance Card */}
         <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
@@ -219,16 +224,6 @@ export const BankingDashboard = () => {
                 <p className="text-xs font-medium">History</p>
               </CardContent>
             </Card>
-            
-            <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
-              onClick={() => navigate("/settings")}
-            >
-              <CardContent className="p-3 text-center">
-                <Settings className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-xs font-medium">Settings</p>
-              </CardContent>
-            </Card>
 
             <Card 
               className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
@@ -249,17 +244,6 @@ export const BankingDashboard = () => {
                 <CreditCard className="h-5 w-5 mx-auto mb-2 text-accent" />
                 <p className="text-xs font-medium">Virtual Cards</p>
                 <p className="text-[10px] text-muted-foreground">2 Active</p>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
-              onClick={() => navigate("/my-account")}
-            >
-              <CardContent className="p-3 text-center">
-                <User className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-xs font-medium">My Account</p>
-                <p className="text-[10px] text-muted-foreground">Profile</p>
               </CardContent>
             </Card>
 
@@ -407,8 +391,11 @@ export const BankingDashboard = () => {
             </Card>
           </div>
         )}
+          </div>
+        </div>
       </div>
       <CustomerSupportChat />
-    </div>
+    </SidebarProvider>
+
   );
 };
