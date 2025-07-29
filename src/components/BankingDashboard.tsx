@@ -85,37 +85,19 @@ export const BankingDashboard = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <div className="flex-1 bg-background bg-banking-gradient p-4 md:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex-1 bg-background bg-banking-gradient p-3 md:p-6 overflow-hidden">
+          <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 h-full overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <SidebarTrigger />
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-foreground">Credit Stirling Bank PLC</h1>
-                  <p className="text-muted-foreground">{getTimeGreeting()}, {userName}!</p>
+                  <h1 className="text-lg md:text-xl font-medium text-muted-foreground">Credit Stirling Bank PLC</h1>
+                  <p className="text-xl md:text-2xl font-bold text-foreground">{getTimeGreeting()}, {userName}!</p>
                   {accountNumber && (
                     <p className="text-sm text-muted-foreground">Account: ****{accountNumber.slice(-4)}</p>
                   )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate("/my-account")}
-                  className="relative"
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={avatarUrl || ''} />
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-                <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                  <LogOut className="h-5 w-5" />
-                </Button>
               </div>
             </div>
 
@@ -194,100 +176,100 @@ export const BankingDashboard = () => {
 
         {/* Quick Actions Slider */}
         <div className="relative">
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-1">
+          <div className="flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 px-1">
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/pay-bills")}
             >
-              <CardContent className="p-3 text-center">
-                <CreditCard className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-xs font-medium">Pay Bills</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <CreditCard className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-primary" />
+                <p className="text-[10px] md:text-xs font-medium">Pay Bills</p>
               </CardContent>
             </Card>
             
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/savings")}
             >
-              <CardContent className="p-3 text-center">
-                <PiggyBank className="h-5 w-5 mx-auto mb-2 text-accent" />
-                <p className="text-xs font-medium">Savings</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <PiggyBank className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-accent" />
+                <p className="text-[10px] md:text-xs font-medium">Savings</p>
               </CardContent>
             </Card>
             
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/history")}
             >
-              <CardContent className="p-3 text-center">
-                <History className="h-5 w-5 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-xs font-medium">History</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <History className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-muted-foreground" />
+                <p className="text-[10px] md:text-xs font-medium">History</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/kyc-status")}
             >
-              <CardContent className="p-3 text-center">
-                <Shield className="h-5 w-5 mx-auto mb-2 text-success-green" />
-                <p className="text-xs font-medium">KYC Status</p>
-                <p className="text-[10px] text-success-green">Verified</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <Shield className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-success-green" />
+                <p className="text-[10px] md:text-xs font-medium">KYC Status</p>
+                <p className="text-[8px] md:text-[10px] text-success-green">Verified</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/virtual-cards")}
             >
-              <CardContent className="p-3 text-center">
-                <CreditCard className="h-5 w-5 mx-auto mb-2 text-accent" />
-                <p className="text-xs font-medium">Virtual Cards</p>
-                <p className="text-[10px] text-muted-foreground">2 Active</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <CreditCard className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-accent" />
+                <p className="text-[10px] md:text-xs font-medium">Virtual Cards</p>
+                <p className="text-[8px] md:text-[10px] text-muted-foreground">2 Active</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/account-summary")}
             >
-              <CardContent className="p-3 text-center">
-                <DollarSign className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-xs font-medium">Account Summary</p>
-                <p className="text-[10px] text-muted-foreground">Overview</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <DollarSign className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-primary" />
+                <p className="text-[10px] md:text-xs font-medium">Account Summary</p>
+                <p className="text-[8px] md:text-[10px] text-muted-foreground">Overview</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/transfer")}
             >
-              <CardContent className="p-3 text-center">
-                <ArrowLeftRight className="h-5 w-5 mx-auto mb-2 text-accent" />
-                <p className="text-xs font-medium">Local Transfer</p>
-                <p className="text-[10px] text-muted-foreground">Send Money</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <ArrowLeftRight className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-accent" />
+                <p className="text-[10px] md:text-xs font-medium">Local Transfer</p>
+                <p className="text-[8px] md:text-[10px] text-muted-foreground">Send Money</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/travel-leisure")}
             >
-              <CardContent className="p-3 text-center">
-                <Plane className="h-5 w-5 mx-auto mb-2 text-green-600" />
-                <p className="text-xs font-medium">Travel & Leisure</p>
-                <p className="text-[10px] text-muted-foreground">Visa & Booking</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <Plane className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-green-600" />
+                <p className="text-[10px] md:text-xs font-medium">Travel & Leisure</p>
+                <p className="text-[8px] md:text-[10px] text-muted-foreground">Visa & Booking</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[120px] snap-start"
+              className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
               onClick={() => navigate("/support")}
             >
-              <CardContent className="p-3 text-center">
-                <HeadphonesIcon className="h-5 w-5 mx-auto mb-2 text-primary" />
-                <p className="text-xs font-medium">Support</p>
-                <p className="text-[10px] text-muted-foreground">24/7 Help</p>
+              <CardContent className="p-2 md:p-3 text-center">
+                <HeadphonesIcon className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-primary" />
+                <p className="text-[10px] md:text-xs font-medium">Support</p>
+                <p className="text-[8px] md:text-[10px] text-muted-foreground">24/7 Help</p>
               </CardContent>
             </Card>
           </div>
@@ -296,38 +278,38 @@ export const BankingDashboard = () => {
         {/* Recent Transactions */}
         <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
           <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
+            <CardTitle className="text-base md:text-lg">Recent Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3 max-h-60 md:max-h-80 overflow-y-auto">
               {transactions.map((transaction) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary/70 transition-colors"
+                  className="flex items-center justify-between p-2 md:p-3 rounded-lg bg-secondary/50 cursor-pointer hover:bg-secondary/70 transition-colors"
                   onClick={() => handleTransactionClick(transaction)}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className={`p-2 rounded-full ${
+                  <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                    <div className={`p-1.5 md:p-2 rounded-full ${
                       transaction.amount > 0 
                         ? 'bg-success-green/20' 
                         : 'bg-destructive/20'
                     }`}>
                       {transaction.amount > 0 ? (
-                        <ArrowDownLeft className="h-4 w-4 text-success-green" />
+                        <ArrowDownLeft className="h-3 w-3 md:h-4 md:w-4 text-success-green" />
                       ) : (
-                        <ArrowUpRight className="h-4 w-4 text-destructive" />
+                        <ArrowUpRight className="h-3 w-3 md:h-4 md:w-4 text-destructive" />
                       )}
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground text-sm md:text-base truncate">
                         {transaction.description}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs md:text-sm text-muted-foreground">
                         {transaction.date.toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <div className={`font-semibold ${
+                  <div className={`font-semibold text-sm md:text-base flex-shrink-0 ${
                     transaction.amount > 0 
                       ? 'text-success-green' 
                       : 'text-destructive'
