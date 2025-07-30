@@ -43,6 +43,7 @@ All colors MUST be HSL.
     --balance-glow: 0 0 30px hsl(210 100% 45% / 0.2);
     --success-green: 142 76% 36%;
     --warning-orange: 38 92% 50%;
+    --dark-blue: 220 91% 20%;
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;

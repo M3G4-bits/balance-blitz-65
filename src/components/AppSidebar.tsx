@@ -75,7 +75,7 @@ export function AppSidebar() {
       collapsible="icon"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      <SidebarContent>
+      <SidebarContent style={{ backgroundColor: 'hsl(var(--dark-blue))' }}>
         {/* Profile Section */}
         {state !== "collapsed" && (
           <SidebarGroup>
