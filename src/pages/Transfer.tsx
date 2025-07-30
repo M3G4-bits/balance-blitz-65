@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Transfer() {
@@ -17,6 +17,7 @@ export default function Transfer() {
   const [bankName, setBankName] = useState("");
   const [sortCode, setSortCode] = useState("");
   const [description, setDescription] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { balance, formatCurrency } = useBanking();
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export default function Transfer() {
     }
   }, [user, navigate]);
 
-  const handleTransfer = () => {
+  const handleTransfer = async () => {
     const amount = parseFloat(transferAmount);
     if (!amount || amount <= 0 || !transferRecipient || !accountNumber || !bankName || !sortCode) {
       toast({
@@ -59,6 +60,11 @@ export default function Transfer() {
       return;
     }
 
+    setIsLoading(true);
+    
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     // Navigate to confirmation page with transfer data
     navigate("/transfer/confirm", {
       state: {
@@ -70,6 +76,8 @@ export default function Transfer() {
         description
       }
     });
+
+    setIsLoading(false);
   };
 
   return (
@@ -161,8 +169,16 @@ export default function Transfer() {
               onClick={handleTransfer} 
               className="w-full bg-primary hover:bg-primary/90"
               size="lg"
+              disabled={isLoading}
             >
-              Send Transfer
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Send Transfer'
+              )}
             </Button>
           </CardContent>
         </Card>

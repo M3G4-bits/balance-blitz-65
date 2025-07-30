@@ -26,6 +26,7 @@ import History from "./pages/History";
 import ApplyLoan from "./pages/ApplyLoan";
 import IncreaseCreditLine from "./pages/IncreaseCreditLine";
 import Support from "./pages/Support";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/apply-loan" element={<ApplyLoan />} />
               <Route path="/increase-credit-line" element={<IncreaseCreditLine />} />
               <Route path="/support" element={<Support />} />
+              <Route path="/admin" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

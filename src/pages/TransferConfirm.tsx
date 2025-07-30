@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function TransferConfirm() {
   const navigate = useNavigate();
@@ -12,11 +12,17 @@ export default function TransferConfirm() {
   const transferData = location.state;
   const { addTransaction, formatCurrency } = useBanking();
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [transferCount, setTransferCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
     }
+    
+    // Get transfer count from localStorage
+    const count = parseInt(localStorage.getItem('transferCount') || '0', 10);
+    setTransferCount(count);
   }, [user, navigate]);
 
   if (!transferData) {
@@ -27,9 +33,18 @@ export default function TransferConfirm() {
   const { amount, recipient, accountNumber, bankName, sortCode, description } = transferData;
 
   const handleConfirm = async () => {
-    // 50/50 chance of success or failure
-    const isSuccess = Math.random() >= 0.5;
+    setIsLoading(true);
+    
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    // Alternating success/failure pattern
+    const isSuccess = transferCount % 2 === 0;
     const status = isSuccess ? 'completed' : 'pending';
+
+    // Update transfer count
+    const newCount = transferCount + 1;
+    localStorage.setItem('transferCount', newCount.toString());
 
     // Add transaction to history
     await addTransaction({
@@ -40,6 +55,8 @@ export default function TransferConfirm() {
       recipient: recipient,
       status: status
     });
+    
+    setIsLoading(false);
     
     if (isSuccess) {
       navigate("/transfer/success", { state: transferData });
@@ -120,8 +137,16 @@ export default function TransferConfirm() {
                 onClick={handleConfirm} 
                 className="flex-1 bg-primary hover:bg-primary/90"
                 size="lg"
+                disabled={isLoading}
               >
-                Proceed with Transfer
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing Transfer...
+                  </>
+                ) : (
+                  'Proceed with Transfer'
+                )}
               </Button>
             </div>
           </CardContent>

@@ -5,7 +5,8 @@ import {
   History, 
   Shield, 
   HeadphonesIcon,
-  LogOut
+  LogOut,
+  MapPin
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +43,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<{ ip: string; country: string; flag: string } | null>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -57,9 +59,33 @@ export function AppSidebar() {
         }
       }
     };
+
+    const fetchUserLocation = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        setUserLocation({
+          ip: data.ip,
+          country: data.country_name,
+          flag: data.country_code ? getCountryFlag(data.country_code) : '🌍'
+        });
+      } catch (error) {
+        console.error('Error fetching location:', error);
+        setUserLocation({ ip: 'Unknown', country: 'Unknown', flag: '🌍' });
+      }
+    };
     
     fetchUserProfile();
+    fetchUserLocation();
   }, [user]);
+
+  const getCountryFlag = (countryCode: string) => {
+    const codePoints = countryCode
+      .toUpperCase()
+      .split('')
+      .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  };
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -81,13 +107,26 @@ export function AppSidebar() {
           <SidebarGroup>
             <SidebarGroupContent>
               <div className="flex items-center gap-3 p-4 border-b">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-12 w-12">
                   <AvatarImage src={userProfile?.avatar_url || ""} />
-                  <AvatarFallback>{userProfile?.display_name?.charAt(0) || 'G'}</AvatarFallback>
+                  <AvatarFallback className="text-lg">
+                    {userProfile?.first_name?.charAt(0) || userProfile?.last_name?.charAt(0) || 'U'}
+                  </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{userProfile?.display_name || 'Guest'}</span>
+                <div className="flex flex-col space-y-1">
+                  <span className="text-sm font-medium">
+                    {userProfile?.first_name && userProfile?.last_name 
+                      ? `${userProfile.first_name} ${userProfile.last_name}`
+                      : userProfile?.display_name || 'Guest User'
+                    }
+                  </span>
                   <span className="text-xs text-muted-foreground">Account: {userProfile?.account_number || 'N/A'}</span>
+                  {userLocation && (
+                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      <span>{userLocation.flag} {userLocation.ip}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </SidebarGroupContent>
