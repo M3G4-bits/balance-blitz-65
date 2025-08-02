@@ -69,7 +69,7 @@ export default function AdminDashboard() {
       const { data, error } = await supabase
         .from('admin_roles')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id as string);
 
       if (error) {
         console.error('Admin check error:', error);
