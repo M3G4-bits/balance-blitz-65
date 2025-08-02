@@ -43,7 +43,7 @@ interface ChatMessage {
 }
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -55,9 +55,11 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    checkAdminAccess();
-    fetchUsers();
-  }, [user]);
+    if (!loading) {
+      checkAdminAccess();
+      fetchUsers();
+    }
+  }, [user, loading]);
 
   const checkAdminAccess = async () => {
     console.log('Checking admin access for user:', user?.id);
@@ -208,6 +210,17 @@ export default function AdminDashboard() {
       console.error('Error sending message:', error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
