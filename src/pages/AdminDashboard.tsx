@@ -60,16 +60,22 @@ export default function AdminDashboard() {
   }, [user]);
 
   const checkAdminAccess = async () => {
+    console.log('Checking admin access for user:', user?.id);
+    
     if (!user) {
+      console.log('No user found, redirecting to auth');
       navigate('/auth');
       return;
     }
 
     try {
+      console.log('Making admin check request for user ID:', user.id);
       const { data, error } = await supabase
         .from('admin_roles')
         .select('*')
-        .eq('user_id', user.id as string);
+        .eq('user_id', user.id);
+
+      console.log('Admin check response:', { data, error });
 
       if (error) {
         console.error('Admin check error:', error);
@@ -83,6 +89,7 @@ export default function AdminDashboard() {
       }
 
       if (!data || data.length === 0) {
+        console.log('No admin role found for user');
         toast({
           title: "Access Denied",
           description: "You don't have admin privileges.",
@@ -91,6 +98,8 @@ export default function AdminDashboard() {
         navigate('/');
         return;
       }
+
+      console.log('Admin access granted!');
     } catch (error) {
       console.error('Admin check error:', error);
       navigate('/');
