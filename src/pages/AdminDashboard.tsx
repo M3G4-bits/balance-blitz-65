@@ -69,10 +69,20 @@ export default function AdminDashboard() {
       const { data, error } = await supabase
         .from('admin_roles')
         .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', user.id);
 
-      if (error || !data) {
+      if (error) {
+        console.error('Admin check error:', error);
+        toast({
+          title: "Access Denied", 
+          description: "Error checking admin privileges.",
+          variant: "destructive"
+        });
+        navigate('/');
+        return;
+      }
+
+      if (!data || data.length === 0) {
         toast({
           title: "Access Denied",
           description: "You don't have admin privileges.",
