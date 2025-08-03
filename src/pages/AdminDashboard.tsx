@@ -318,17 +318,16 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    const initializeAdminData = async () => {
+    const initData = async () => {
       if (!loading && user) {
         await checkAdminAccess();
         await fetchUsers();
         await fetchConversations();
-        setIsLoading(false); // Set loading to false after all data is fetched
+        setIsLoading(false);
       }
     };
-
-    initializeAdminData();
-  }, [user, loading, navigate, toast]);
+    initData();
+  }, [user, loading]);
 
   // Subscribe to real-time presence updates
   useEffect(() => {
