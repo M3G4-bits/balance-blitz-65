@@ -112,7 +112,7 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      // Fetch profiles with balances and presence
+      // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
@@ -133,7 +133,7 @@ const AdminDashboard = () => {
 
       if (balancesError) throw balancesError;
 
-      // Fetch presence
+      // Fetch presence - create records if they don't exist
       const { data: presence, error: presenceError } = await supabase
         .from('user_presence')
         .select('user_id, is_online');
@@ -164,7 +164,7 @@ const AdminDashboard = () => {
 
   const fetchConversations = async () => {
     try {
-      // First get conversations
+      // First get conversations - use simpler query since admin can see all
       const { data: conversations, error: convError } = await supabase
         .from('support_conversations')
         .select('id, user_id, status, created_at, updated_at')
@@ -184,7 +184,10 @@ const AdminDashboard = () => {
         .select('user_id, first_name, last_name, email')
         .in('user_id', userIds);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error fetching profiles:', profileError);
+        // Continue with conversations even if profiles fail
+      }
 
       // Combine the data
       const conversationsWithProfile = conversations.map(conv => {
