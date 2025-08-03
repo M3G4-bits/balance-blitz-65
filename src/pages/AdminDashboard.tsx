@@ -57,6 +57,8 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [newBalance, setNewBalance] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [balanceOperation, setBalanceOperation] = useState<"set" | "deposit">("deposit");
   const [conversations, setConversations] = useState<SupportConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [conversationMessages, setConversationMessages] = useState<SupportMessage[]>([]);
@@ -285,6 +287,52 @@ const AdminDashboard = () => {
     }
   };
 
+  const depositToUserAccount = async () => {
+    if (!selectedUser || !depositAmount || !selectedUser.account_number) {
+      toast({
+        title: "Error",
+        description: "Please select a user and enter a deposit amount.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.rpc('admin_deposit', {
+        target_account_number: selectedUser.account_number,
+        deposit_amount: parseFloat(depositAmount),
+        admin_user_id: user?.id
+      });
+
+      if (error) throw error;
+
+      // Parse the JSON response
+      const result = data as any;
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      toast({
+        title: "Success",
+        description: `Deposited $${depositAmount} to ${selectedUser.first_name}'s account. New balance: $${result?.new_balance || 'Updated'}`,
+      });
+
+      setDepositAmount("");
+      fetchUsers();
+    } catch (error) {
+      console.error('Error depositing funds:', error);
+      toast({
+        title: "Error",
+        description: "Failed to deposit funds.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
@@ -486,8 +534,8 @@ const AdminDashboard = () => {
           <TabsContent value="balance" className="space-y-4">
             <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
               <CardHeader>
-                <CardTitle>Update User Balance</CardTitle>
-                <CardDescription>Modify account balances for users</CardDescription>
+                <CardTitle>Balance Management</CardTitle>
+                <CardDescription>Deposit funds or set user account balances</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -512,27 +560,71 @@ const AdminDashboard = () => {
                   <div className="space-y-4">
                     <div className="p-4 bg-secondary/50 rounded-lg">
                       <p><strong>Selected:</strong> {selectedUser.first_name} {selectedUser.last_name}</p>
+                      <p><strong>Account Number:</strong> {selectedUser.account_number}</p>
                       <p><strong>Current Balance:</strong> ${selectedUser.balance.toLocaleString()}</p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="newBalance">New Balance</Label>
-                      <Input
-                        id="newBalance"
-                        type="number"
-                        placeholder="0.00"
-                        value={newBalance}
-                        onChange={(e) => setNewBalance(e.target.value)}
-                      />
+                      <Label>Operation Type</Label>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant={balanceOperation === "deposit" ? "default" : "outline"}
+                          onClick={() => setBalanceOperation("deposit")}
+                          className="flex-1"
+                        >
+                          Deposit Money
+                        </Button>
+                        <Button
+                          variant={balanceOperation === "set" ? "default" : "outline"}
+                          onClick={() => setBalanceOperation("set")}
+                          className="flex-1"
+                        >
+                          Set Balance
+                        </Button>
+                      </div>
                     </div>
 
-                    <Button 
-                      onClick={updateUserBalance} 
-                      disabled={isLoading}
-                      className="w-full"
-                    >
-                      {isLoading ? "Updating..." : "Update Balance"}
-                    </Button>
+                    {balanceOperation === "deposit" ? (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="depositAmount">Deposit Amount</Label>
+                          <Input
+                            id="depositAmount"
+                            type="number"
+                            placeholder="0.00"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                          />
+                        </div>
+                        <Button 
+                          onClick={depositToUserAccount} 
+                          disabled={isLoading}
+                          className="w-full"
+                        >
+                          {isLoading ? "Processing..." : "Deposit Funds"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="newBalance">New Balance</Label>
+                          <Input
+                            id="newBalance"
+                            type="number"
+                            placeholder="0.00"
+                            value={newBalance}
+                            onChange={(e) => setNewBalance(e.target.value)}
+                          />
+                        </div>
+                        <Button 
+                          onClick={updateUserBalance} 
+                          disabled={isLoading}
+                          className="w-full"
+                        >
+                          {isLoading ? "Updating..." : "Set Balance"}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
