@@ -1,52 +1,144 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
+  message: string;
+  sender_type: 'user' | 'admin';
+  created_at: string;
 }
 
 const CustomerSupportChat = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      text: "Hello! How can I help you today?",
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  // Load or create conversation when chat opens
+  useEffect(() => {
+    if (isOpen && user && !conversationId) {
+      loadConversation();
+    }
+  }, [isOpen, user]);
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputValue,
-      isUser: true,
-      timestamp: new Date(),
+  // Subscribe to new messages
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'support_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some(msg => msg.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
+  }, [conversationId]);
 
-    setMessages((prev) => [...prev, newMessage]);
-    setInputValue("");
+  const loadConversation = async () => {
+    if (!user) return;
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Thank you for your message. A support agent will respond shortly.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+    try {
+      // Check for existing conversation
+      const { data: conversations } = await supabase
+        .from('support_conversations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'open')
+        .limit(1);
+
+      let convId: string;
+
+      if (conversations && conversations.length > 0) {
+        convId = conversations[0].id;
+      } else {
+        // Create new conversation
+        const { data: newConv, error } = await supabase
+          .from('support_conversations')
+          .insert({
+            user_id: user.id,
+            status: 'open'
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        convId = newConv.id;
+      }
+
+      setConversationId(convId);
+
+      // Load existing messages
+      const { data: existingMessages } = await supabase
+        .from('support_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (existingMessages) {
+        setMessages(existingMessages as Message[]);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load conversation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || !conversationId || !user) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('support_messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          sender_type: 'user',
+          message: inputValue,
+        });
+
+      if (error) throw error;
+      setInputValue("");
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -90,16 +182,16 @@ const CustomerSupportChat = () => {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}
+                  className={`flex ${message.sender_type === 'user' ? "justify-end" : "justify-start"}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-lg p-2 text-sm ${
-                      message.isUser
+                      message.sender_type === 'user'
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {message.text}
+                    {message.message}
                   </div>
                 </div>
               ))}
@@ -116,7 +208,7 @@ const CustomerSupportChat = () => {
                 placeholder="Type your message..."
                 className="flex-1"
               />
-              <Button onClick={handleSendMessage} size="icon">
+              <Button onClick={handleSendMessage} size="icon" disabled={loading}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>

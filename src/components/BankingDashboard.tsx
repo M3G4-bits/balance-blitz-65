@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import CustomerSupportChat from "@/components/CustomerSupportChat";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { usePresence } from "@/hooks/usePresence";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -28,6 +29,7 @@ import {
 } from "lucide-react";
 
 export const BankingDashboard = () => {
+  usePresence(); // Track user presence
   const navigate = useNavigate();
   const { balance, transactions, formatCurrency } = useBanking();
   const { user, signOut } = useAuth();
