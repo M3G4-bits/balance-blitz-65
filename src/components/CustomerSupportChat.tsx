@@ -15,8 +15,22 @@ interface Message {
   created_at: string;
 }
 
-const CustomerSupportChat = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface CustomerSupportChatProps {
+  isOpen?: boolean;
+  onToggle?: () => void;
+}
+
+const CustomerSupportChat = ({ isOpen: externalIsOpen, onToggle }: CustomerSupportChatProps = {}) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  
+  const toggleChat = () => {
+    if (onToggle) {
+      onToggle();
+    } else {
+      setInternalIsOpen(!internalIsOpen);
+    }
+  };
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -152,7 +166,7 @@ const CustomerSupportChat = () => {
       {/* Chat Button */}
       {!isOpen && (
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={toggleChat}
           className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50"
           size="icon"
         >
@@ -167,7 +181,7 @@ const CustomerSupportChat = () => {
           <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
             <h3 className="font-medium">Customer Support</h3>
             <Button
-              onClick={() => setIsOpen(false)}
+              onClick={toggleChat}
               variant="ghost"
               size="icon"
               className="h-6 w-6 text-primary-foreground hover:bg-primary-foreground/20"

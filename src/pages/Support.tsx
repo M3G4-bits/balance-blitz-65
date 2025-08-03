@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, HeadphonesIcon, Mail, Phone, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import CustomerSupportChat from '@/components/CustomerSupportChat';
 
 const Support = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [supportData, setSupportData] = useState({
     name: '',
     email: '',
@@ -89,13 +91,17 @@ const Support = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-3 p-3 w-full h-auto justify-start"
+                  onClick={() => setIsChatOpen(true)}
+                >
                   <MessageCircle className="h-5 w-5 text-primary" />
-                  <div>
+                  <div className="text-left">
                     <p className="font-medium">Live Chat</p>
                     <p className="text-sm text-muted-foreground">Available 24/7</p>
                   </div>
-                </div>
+                </Button>
 
                 <div className="mt-6">
                   <h3 className="font-semibold mb-2">Support Hours</h3>
@@ -206,6 +212,10 @@ const Support = () => {
           </div>
         </div>
       </div>
+      <CustomerSupportChat 
+        isOpen={isChatOpen} 
+        onToggle={() => setIsChatOpen(!isChatOpen)} 
+      />
     </div>
   );
 };

@@ -2,9 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { XCircle, Phone, Mail, MessageCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
+import CustomerSupportChat from "@/components/CustomerSupportChat";
 
 export default function TransferFailure() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function TransferFailure() {
   const transferData = location.state;
   const { formatCurrency } = useBanking();
   const { user } = useAuth();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -94,7 +96,11 @@ export default function TransferFailure() {
                   <Mail className="mr-2 h-4 w-4" />
                   Email
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setIsChatOpen(true)}
+                >
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Live Chat
                 </Button>
@@ -126,6 +132,10 @@ export default function TransferFailure() {
           </CardContent>
         </Card>
       </div>
+      <CustomerSupportChat 
+        isOpen={isChatOpen} 
+        onToggle={() => setIsChatOpen(!isChatOpen)} 
+      />
     </div>
   );
 }
