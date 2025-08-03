@@ -305,6 +305,7 @@ const AdminDashboard = () => {
       checkAdminAccess();
       fetchUsers();
       fetchConversations();
+      setIsLoading(false); // Set loading to false after initial data fetch
     }
   }, [user, loading, navigate, toast]);
 
