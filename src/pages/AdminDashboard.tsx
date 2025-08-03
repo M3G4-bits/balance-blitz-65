@@ -111,6 +111,7 @@ const AdminDashboard = () => {
   };
 
   const fetchUsers = async () => {
+    console.log('Admin: Starting to fetch users...');
     try {
       // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
@@ -124,21 +125,33 @@ const AdminDashboard = () => {
           account_number
         `);
 
-      if (profilesError) throw profilesError;
+      console.log('Admin: Profiles data:', profiles);
+      if (profilesError) {
+        console.error('Admin: Profiles error:', profilesError);
+        throw profilesError;
+      }
 
       // Fetch balances
       const { data: balances, error: balancesError } = await supabase
         .from('user_balances')
         .select('user_id, balance');
 
-      if (balancesError) throw balancesError;
+      console.log('Admin: Balances data:', balances);
+      if (balancesError) {
+        console.error('Admin: Balances error:', balancesError);
+        throw balancesError;
+      }
 
       // Fetch presence - create records if they don't exist
       const { data: presence, error: presenceError } = await supabase
         .from('user_presence')
         .select('user_id, is_online');
 
-      if (presenceError) throw presenceError;
+      console.log('Admin: Presence data:', presence);
+      if (presenceError) {
+        console.error('Admin: Presence error:', presenceError);
+        throw presenceError;
+      }
 
       // Combine data
       const usersWithBalances: UserProfile[] = profiles.map(profile => {
@@ -151,6 +164,7 @@ const AdminDashboard = () => {
         };
       });
 
+      console.log('Admin: Final users data:', usersWithBalances);
       setUsers(usersWithBalances);
     } catch (error) {
       console.error('Error fetching users:', error);
