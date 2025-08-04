@@ -400,6 +400,35 @@ const AdminDashboard = () => {
 
       toast({
         title: "Success",
+        description: `Transfer setting updated to ${forceSuccess ? 'Force Success' : 'Force Failure'}`,
+      });
+    } catch (error) {
+      console.error('Error updating transfer setting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update transfer setting",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeTransferSetting = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('admin_transfer_settings')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      setTransferSettings(prev => {
+        const newSettings = { ...prev };
+        delete newSettings[userId];
+        return newSettings;
+      });
+
+      toast({
+        title: "Success",
         description: `Transfer setting updated for user`,
       });
     } catch (error) {
@@ -855,6 +884,13 @@ const AdminDashboard = () => {
                           onClick={() => updateTransferSetting(user.user_id, false)}
                         >
                           Force Failure
+                        </Button>
+                        <Button
+                          variant={transferSettings[user.user_id] === undefined ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => removeTransferSetting(user.user_id)}
+                        >
+                          Reset
                         </Button>
                         <Badge variant={transferSettings[user.user_id] === true ? "default" : transferSettings[user.user_id] === false ? "destructive" : "secondary"}>
                           {transferSettings[user.user_id] === true ? "Success" : transferSettings[user.user_id] === false ? "Failure" : "Random"}

@@ -78,8 +78,8 @@ export const BankingProvider = ({ children }: { children: ReactNode }) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('Transaction change:', payload);
-          // Refetch transactions when any change occurs
+          console.log('Transaction change detected:', payload.eventType, payload);
+          // Refetch transactions when any change occurs (INSERT, UPDATE, DELETE)
           fetchUserTransactions();
         }
       )
