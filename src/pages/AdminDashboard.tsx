@@ -64,6 +64,15 @@ const AdminDashboard = () => {
   const [conversationMessages, setConversationMessages] = useState<SupportMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  
+  // New states for enhanced deposit functionality
+  const [customDate, setCustomDate] = useState("");
+  const [customBank, setCustomBank] = useState("Admin Bank");
+  const [customSender, setCustomSender] = useState("Admin Deposit");
+  const [customDescription, setCustomDescription] = useState("Admin deposit");
+  
+  // Transfer settings state
+  const [transferSettings, setTransferSettings] = useState<Record<string, boolean>>({});
 
   const checkAdminAccess = async () => {
     console.log('Checking admin access for user:', user?.id);
@@ -300,10 +309,17 @@ const AdminDashboard = () => {
     setIsLoading(true);
 
     try {
+      // Prepare the date parameter
+      const depositDate = customDate ? new Date(customDate).toISOString() : new Date().toISOString();
+      
       const { data, error } = await supabase.rpc('admin_deposit', {
         target_account_number: selectedUser.account_number,
         deposit_amount: parseFloat(depositAmount),
-        admin_user_id: user?.id
+        admin_user_id: user?.id,
+        custom_date: depositDate,
+        custom_bank: customBank,
+        custom_sender: customSender,
+        custom_description: customDescription
       });
 
       if (error) throw error;
@@ -320,6 +336,10 @@ const AdminDashboard = () => {
       });
 
       setDepositAmount("");
+      setCustomDate("");
+      setCustomBank("Admin Bank");
+      setCustomSender("Admin Deposit");
+      setCustomDescription("Admin deposit");
       fetchUsers();
     } catch (error) {
       console.error('Error depositing funds:', error);
@@ -330,6 +350,55 @@ const AdminDashboard = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTransferSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_transfer_settings')
+        .select('user_id, force_success');
+
+      if (error) throw error;
+
+      const settings: Record<string, boolean> = {};
+      data?.forEach(setting => {
+        settings[setting.user_id] = setting.force_success;
+      });
+      setTransferSettings(settings);
+    } catch (error) {
+      console.error('Error fetching transfer settings:', error);
+    }
+  };
+
+  const updateTransferSetting = async (userId: string, forceSuccess: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('admin_transfer_settings')
+        .upsert({
+          user_id: userId,
+          force_success: forceSuccess,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      setTransferSettings(prev => ({
+        ...prev,
+        [userId]: forceSuccess
+      }));
+
+      toast({
+        title: "Success",
+        description: `Transfer setting updated for user`,
+      });
+    } catch (error) {
+      console.error('Error updating transfer setting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update transfer setting.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -371,6 +440,7 @@ const AdminDashboard = () => {
         await checkAdminAccess();
         await fetchUsers();
         await fetchConversations();
+        await fetchTransferSettings();
         setIsLoading(false);
       }
     };
@@ -495,9 +565,10 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="balance">Balance Control</TabsTrigger>
+            <TabsTrigger value="transfers">Transfer Control</TabsTrigger>
             <TabsTrigger value="support">Customer Support</TabsTrigger>
           </TabsList>
 
@@ -584,26 +655,64 @@ const AdminDashboard = () => {
                       </div>
                     </div>
 
-                    {balanceOperation === "deposit" ? (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="depositAmount">Deposit Amount</Label>
-                          <Input
-                            id="depositAmount"
-                            type="number"
-                            placeholder="0.00"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                          />
-                        </div>
-                        <Button 
-                          onClick={depositToUserAccount} 
-                          disabled={isLoading}
-                          className="w-full"
-                        >
-                          {isLoading ? "Processing..." : "Deposit Funds"}
-                        </Button>
-                      </div>
+                     {balanceOperation === "deposit" ? (
+                       <div className="space-y-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div className="space-y-2">
+                             <Label htmlFor="depositAmount">Deposit Amount</Label>
+                             <Input
+                               id="depositAmount"
+                               type="number"
+                               placeholder="0.00"
+                               value={depositAmount}
+                               onChange={(e) => setDepositAmount(e.target.value)}
+                             />
+                           </div>
+                           <div className="space-y-2">
+                             <Label htmlFor="customDate">Transaction Date</Label>
+                             <Input
+                               id="customDate"
+                               type="datetime-local"
+                               value={customDate}
+                               onChange={(e) => setCustomDate(e.target.value)}
+                             />
+                           </div>
+                           <div className="space-y-2">
+                             <Label htmlFor="customBank">Bank Name</Label>
+                             <Input
+                               id="customBank"
+                               type="text"
+                               value={customBank}
+                               onChange={(e) => setCustomBank(e.target.value)}
+                             />
+                           </div>
+                           <div className="space-y-2">
+                             <Label htmlFor="customSender">Sender Name</Label>
+                             <Input
+                               id="customSender"
+                               type="text"
+                               value={customSender}
+                               onChange={(e) => setCustomSender(e.target.value)}
+                             />
+                           </div>
+                         </div>
+                         <div className="space-y-2">
+                           <Label htmlFor="customDescription">Description</Label>
+                           <Input
+                             id="customDescription"
+                             type="text"
+                             value={customDescription}
+                             onChange={(e) => setCustomDescription(e.target.value)}
+                           />
+                         </div>
+                         <Button 
+                           onClick={depositToUserAccount} 
+                           disabled={isLoading}
+                           className="w-full"
+                         >
+                           {isLoading ? "Processing..." : "Deposit Funds"}
+                         </Button>
+                       </div>
                     ) : (
                       <div className="space-y-4">
                         <div className="space-y-2">
@@ -627,6 +736,49 @@ const AdminDashboard = () => {
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="transfers" className="space-y-4">
+            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+              <CardHeader>
+                <CardTitle>Transfer Success Control</CardTitle>
+                <CardDescription>Control whether user transfers succeed or fail</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {users.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div>
+                          <p className="font-medium">{user.first_name} {user.last_name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                          <p className="text-sm text-muted-foreground">Account: {user.account_number}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant={transferSettings[user.user_id] === true ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => updateTransferSetting(user.user_id, true)}
+                        >
+                          Force Success
+                        </Button>
+                        <Button
+                          variant={transferSettings[user.user_id] === false ? "destructive" : "outline"}
+                          size="sm"
+                          onClick={() => updateTransferSetting(user.user_id, false)}
+                        >
+                          Force Failure
+                        </Button>
+                        <Badge variant={transferSettings[user.user_id] === true ? "default" : transferSettings[user.user_id] === false ? "destructive" : "secondary"}>
+                          {transferSettings[user.user_id] === true ? "Success" : transferSettings[user.user_id] === false ? "Failure" : "Random"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

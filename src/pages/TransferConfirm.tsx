@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TransferConfirm() {
   const navigate = useNavigate();
@@ -38,8 +39,27 @@ export default function TransferConfirm() {
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Alternating success/failure pattern
-    const isSuccess = transferCount % 2 === 0;
+    let isSuccess = transferCount % 2 === 0; // Default alternating pattern
+    
+    // Check if admin has set specific transfer settings for this user
+    if (user) {
+      try {
+        const { data: transferSetting, error } = await supabase
+          .from('admin_transfer_settings')
+          .select('force_success')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (!error && transferSetting) {
+          // Admin has set a specific setting for this user
+          isSuccess = transferSetting.force_success;
+        }
+      } catch (error) {
+        console.error('Error checking transfer settings:', error);
+        // If there's an error, fall back to the alternating pattern
+      }
+    }
+    
     const status = isSuccess ? 'completed' : 'pending';
 
     // Update transfer count

@@ -35,6 +35,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_transfer_settings: {
+        Row: {
+          created_at: string
+          force_success: boolean
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          force_success?: boolean
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          force_success?: boolean
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_number: string | null
@@ -229,11 +253,21 @@ export type Database = {
     }
     Functions: {
       admin_deposit: {
-        Args: {
-          target_account_number: string
-          deposit_amount: number
-          admin_user_id: string
-        }
+        Args:
+          | {
+              target_account_number: string
+              deposit_amount: number
+              admin_user_id: string
+            }
+          | {
+              target_account_number: string
+              deposit_amount: number
+              admin_user_id: string
+              custom_date?: string
+              custom_bank?: string
+              custom_sender?: string
+              custom_description?: string
+            }
         Returns: Json
       }
       generate_account_number: {
