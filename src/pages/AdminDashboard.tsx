@@ -73,6 +73,16 @@ const AdminDashboard = () => {
   
   // Transfer settings state
   const [transferSettings, setTransferSettings] = useState<Record<string, boolean>>({});
+  
+  // Transaction editing state
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [editTransactionForm, setEditTransactionForm] = useState({
+    description: '',
+    bank_name: '',
+    recipient: '',
+    created_at: ''
+  });
+  const [userTransactions, setUserTransactions] = useState<any[]>([]);
 
   const checkAdminAccess = async () => {
     console.log('Checking admin access for user:', user?.id);
@@ -402,6 +412,79 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchUserTransactions = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch transactions",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const editTransaction = (transaction: any) => {
+    setEditingTransaction(transaction);
+    setEditTransactionForm({
+      description: transaction.description || '',
+      bank_name: transaction.bank_name || '',
+      recipient: transaction.recipient || '',
+      created_at: new Date(transaction.created_at).toISOString().slice(0, 16)
+    });
+  };
+
+  const updateTransaction = async () => {
+    if (!editingTransaction) return;
+
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          description: editTransactionForm.description,
+          bank_name: editTransactionForm.bank_name,
+          recipient: editTransactionForm.recipient,
+          created_at: new Date(editTransactionForm.created_at).toISOString()
+        })
+        .eq('id', editingTransaction.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Transaction updated successfully",
+      });
+
+      setEditingTransaction(null);
+      setEditTransactionForm({
+        description: '',
+        bank_name: '',
+        recipient: '',
+        created_at: ''
+      });
+
+      // Refresh transactions for selected user
+      if (selectedUser) {
+        fetchUserTransactions(selectedUser.user_id);
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update transaction",
+        variant: "destructive",
+      });
+    }
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
@@ -565,10 +648,11 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="balance">Balance Control</TabsTrigger>
             <TabsTrigger value="transfers">Transfer Control</TabsTrigger>
+            <TabsTrigger value="transactions">Transaction Manager</TabsTrigger>
             <TabsTrigger value="support">Customer Support</TabsTrigger>
           </TabsList>
 
@@ -781,6 +865,148 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="transactions" className="space-y-4">
+            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+              <CardHeader>
+                <CardTitle>Transaction Management</CardTitle>
+                <CardDescription>Edit existing user transactions</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Select User</Label>
+                  <select 
+                    className="w-full p-2 rounded border"
+                    onChange={(e) => {
+                      const user = users.find(u => u.id === e.target.value);
+                      setSelectedUser(user || null);
+                      if (user) {
+                        fetchUserTransactions(user.user_id);
+                      } else {
+                        setUserTransactions([]);
+                      }
+                    }}
+                  >
+                    <option value="">Choose a user to view transactions...</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name} {user.last_name} - {user.account_number}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedUser && userTransactions.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold">Transactions for {selectedUser.first_name} {selectedUser.last_name}</h3>
+                    <ScrollArea className="h-96">
+                      <div className="space-y-2">
+                        {userTransactions.map((transaction) => (
+                          <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex-1 space-y-1">
+                              <p className="font-medium">{transaction.description}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Amount: ${transaction.amount} | Date: {new Date(transaction.created_at).toLocaleString()}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Bank: {transaction.bank_name || 'N/A'} | From: {transaction.recipient || 'N/A'}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => editTransaction(transaction)}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {selectedUser && userTransactions.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No transactions found for this user
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit Transaction Modal */}
+            {editingTransaction && (
+              <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+                <CardHeader>
+                  <CardTitle>Edit Transaction</CardTitle>
+                  <CardDescription>Modify transaction details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-secondary/50 rounded-lg">
+                    <p><strong>Transaction ID:</strong> {editingTransaction.id}</p>
+                    <p><strong>Amount:</strong> ${editingTransaction.amount}</p>
+                    <p><strong>Type:</strong> {editingTransaction.type}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editDescription">Description</Label>
+                      <Input
+                        id="editDescription"
+                        type="text"
+                        value={editTransactionForm.description}
+                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editBankName">Bank Name</Label>
+                      <Input
+                        id="editBankName"
+                        type="text"
+                        value={editTransactionForm.bank_name}
+                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, bank_name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editRecipient">Sender/Recipient</Label>
+                      <Input
+                        id="editRecipient"
+                        type="text"
+                        value={editTransactionForm.recipient}
+                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, recipient: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="editDate">Transaction Date</Label>
+                      <Input
+                        id="editDate"
+                        type="datetime-local"
+                        value={editTransactionForm.created_at}
+                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, created_at: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={updateTransaction} 
+                      disabled={isLoading}
+                      className="flex-1"
+                    >
+                      {isLoading ? "Updating..." : "Update Transaction"}
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => setEditingTransaction(null)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="support" className="space-y-4">
