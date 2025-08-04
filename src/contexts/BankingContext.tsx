@@ -63,6 +63,33 @@ export const BankingProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
+  // Real-time subscription for transaction updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('transaction-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Transaction change:', payload);
+          // Refetch transactions when any change occurs
+          fetchUserTransactions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const fetchUserBalance = async () => {
     if (!user) return;
     
