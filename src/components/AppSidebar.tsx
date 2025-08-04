@@ -106,7 +106,10 @@ export function AppSidebar() {
         {state !== "collapsed" && (
           <SidebarGroup>
             <SidebarGroupContent>
-              <div className="flex items-center gap-3 p-4 border-b">
+              <NavLink 
+                to="/my-account" 
+                className="flex items-center gap-3 p-4 border-b hover:bg-muted/50 transition-colors cursor-pointer"
+              >
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={userProfile?.avatar_url || ""} />
                   <AvatarFallback className="text-lg">
@@ -128,7 +131,7 @@ export function AppSidebar() {
                     </div>
                   )}
                 </div>
-              </div>
+              </NavLink>
             </SidebarGroupContent>
           </SidebarGroup>
         )}

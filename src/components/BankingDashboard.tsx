@@ -361,10 +361,16 @@ export const BankingDashboard = () => {
                     <span className="font-medium">{selectedTransaction.bank_name || 'Credit Stirling Bank PLC'}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
+                <div className="flex flex-col space-y-1">
                   <span className="text-muted-foreground">Description:</span>
-                  <span className="font-medium">{selectedTransaction.description}</span>
+                  <span className="font-medium text-sm break-words">{selectedTransaction.description}</span>
                 </div>
+                {selectedTransaction.recipient && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">From:</span>
+                    <span className="font-medium">{selectedTransaction.recipient}</span>
+                  </div>
+                )}
                 <Button 
                   onClick={() => setShowTransactionModal(false)}
                   className="w-full mt-4"
