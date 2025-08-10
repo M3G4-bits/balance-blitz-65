@@ -383,19 +383,39 @@ const AdminDashboard = () => {
 
   const updateTransferSetting = async (userId: string, forceSuccess: boolean) => {
     try {
-      const { error } = await supabase
+      // Check if a setting already exists for this user
+      const { data: existing, error: selectError } = await supabase
         .from('admin_transfer_settings')
-        .upsert({
-          user_id: userId,
-          force_success: forceSuccess,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (selectError) throw selectError;
+
+      if (existing?.id) {
+        // Update existing row
+        const { error: updateError } = await supabase
+          .from('admin_transfer_settings')
+          .update({
+            force_success: forceSuccess,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+        if (updateError) throw updateError;
+      } else {
+        // Insert new row
+        const { error: insertError } = await supabase
+          .from('admin_transfer_settings')
+          .insert({
+            user_id: userId,
+            force_success: forceSuccess,
+          });
+        if (insertError) throw insertError;
+      }
 
       setTransferSettings(prev => ({
         ...prev,
-        [userId]: forceSuccess
+        [userId]: forceSuccess,
       }));
 
       toast({
@@ -677,12 +697,12 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="balance">Balance Control</TabsTrigger>
-            <TabsTrigger value="transfers">Transfer Control</TabsTrigger>
-            <TabsTrigger value="transactions">Transaction Manager</TabsTrigger>
-            <TabsTrigger value="support">Customer Support</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto gap-2 sm:grid sm:grid-cols-5">
+            <TabsTrigger value="users" className="shrink-0">User Management</TabsTrigger>
+            <TabsTrigger value="balance" className="shrink-0">Balance Control</TabsTrigger>
+            <TabsTrigger value="transfers" className="shrink-0">Transfer Control</TabsTrigger>
+            <TabsTrigger value="transactions" className="shrink-0">Transaction Manager</TabsTrigger>
+            <TabsTrigger value="support" className="shrink-0">Customer Support</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
