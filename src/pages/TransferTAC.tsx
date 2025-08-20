@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TransferTAC() {
   const navigate = useNavigate();
@@ -40,12 +41,41 @@ export default function TransferTAC() {
 
     setIsLoading(true);
     
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Navigate to security code page
-    navigate("/transfer/security", { state: { ...transferData, tacCode } });
-    setIsLoading(false);
+    try {
+      // Get user's correct TAC code from profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('tac_code')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      if (tacCode.toUpperCase() !== profile.tac_code) {
+        toast({
+          title: "Invalid TAC Code",
+          description: "The TAC code you entered is incorrect",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Navigate to security code page
+      navigate("/transfer/security", { state: { ...transferData, tacCode } });
+    } catch (error) {
+      console.error('Error validating TAC:', error);
+      toast({
+        title: "Error",
+        description: "Failed to validate TAC code",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,6 +106,7 @@ export default function TransferTAC() {
                   maxLength={6}
                   value={tacCode}
                   onChange={(value) => setTacCode(value)}
+                  inputMode="text"
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />

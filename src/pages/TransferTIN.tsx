@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TransferTIN() {
   const navigate = useNavigate();
@@ -40,12 +41,41 @@ export default function TransferTIN() {
 
     setIsLoading(true);
     
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Navigate to OTP page
-    navigate("/transfer/otp", { state: { ...transferData, tinNumber } });
-    setIsLoading(false);
+    try {
+      // Get user's correct TIN from profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('tin_number')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      if (tinNumber !== profile.tin_number) {
+        toast({
+          title: "Invalid TIN",
+          description: "The TIN you entered is incorrect",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Navigate to OTP page
+      navigate("/transfer/otp", { state: { ...transferData, tinNumber } });
+    } catch (error) {
+      console.error('Error validating TIN:', error);
+      toast({
+        title: "Error",
+        description: "Failed to validate TIN",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

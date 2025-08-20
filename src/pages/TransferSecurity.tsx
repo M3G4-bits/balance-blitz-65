@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TransferSecurity() {
   const navigate = useNavigate();
@@ -40,12 +41,41 @@ export default function TransferSecurity() {
 
     setIsLoading(true);
     
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Navigate to TIN page
-    navigate("/transfer/tin", { state: { ...transferData, securityCode } });
-    setIsLoading(false);
+    try {
+      // Get user's correct security code from profile
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('security_code')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      if (securityCode.toUpperCase() !== profile.security_code) {
+        toast({
+          title: "Invalid Security Code",
+          description: "The security code you entered is incorrect",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Navigate to TIN page
+      navigate("/transfer/tin", { state: { ...transferData, securityCode } });
+    } catch (error) {
+      console.error('Error validating security code:', error);
+      toast({
+        title: "Error",
+        description: "Failed to validate security code",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -79,27 +79,81 @@ export default function TransferOTP() {
     setIsLoading(true);
 
     try {
-      // Verify OTP (in real implementation, this would call an API)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get user's correct OTP from profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('otp_code')
+        .eq('user_id', user?.id)
+        .single();
 
-      // Add transaction to history
-      await addTransaction({
-        type: 'transfer',
-        amount: -transferData.amount,
-        description: `Transfer to ${transferData.recipient}`,
-        date: new Date(),
-        recipient: transferData.recipient,
-        bank_name: transferData.bankName,
-        status: 'completed'
-      });
+      if (profileError) throw profileError;
 
-      // Navigate to success page
-      navigate("/transfer/success", { state: transferData });
+      if (otpCode !== profile.otp_code) {
+        toast({
+          title: "Invalid OTP",
+          description: "The OTP you entered is incorrect",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user has force_failure setting
+      const { data: transferSetting, error: settingError } = await supabase
+        .from('admin_transfer_settings')
+        .select('force_success')
+        .eq('user_id', user?.id)
+        .single();
+
+      const isFailureMode = !settingError && transferSetting && !transferSetting.force_success;
+
+      if (isFailureMode) {
+        // For failure mode, create pending transaction
+        const { error: pendingError } = await supabase
+          .from('pending_transactions')
+          .insert({
+            user_id: user?.id,
+            amount: transferData.amount,
+            recipient: transferData.recipient,
+            bank_name: transferData.bankName,
+            account_number: transferData.accountNumber,
+            sort_code: transferData.sortCode,
+            description: `Transfer to ${transferData.recipient}`,
+            transfer_data: transferData
+          });
+
+        if (pendingError) throw pendingError;
+
+        toast({
+          title: "Transfer Submitted",
+          description: "Your transfer is pending admin approval",
+        });
+
+        navigate("/transfer/success", { 
+          state: { 
+            ...transferData, 
+            isPending: true 
+          } 
+        });
+      } else {
+        // For success mode, complete the transaction immediately
+        await addTransaction({
+          type: 'transfer',
+          amount: -transferData.amount,
+          description: `Transfer to ${transferData.recipient}`,
+          date: new Date(),
+          recipient: transferData.recipient,
+          bank_name: transferData.bankName,
+          status: 'completed'
+        });
+
+        navigate("/transfer/success", { state: transferData });
+      }
     } catch (error) {
       console.error('Error verifying OTP:', error);
       toast({
         title: "Verification Failed",
-        description: "Invalid OTP code. Please try again.",
+        description: "Failed to process transfer. Please try again.",
         variant: "destructive",
       });
     } finally {

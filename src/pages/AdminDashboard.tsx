@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Users, DollarSign, MessageSquare, Activity } from "lucide-react";
+import { Loader2, Copy } from "lucide-react";
 
 interface UserProfile {
-  id: string;
   user_id: string;
   first_name: string;
   last_name: string;
@@ -29,14 +27,11 @@ interface SupportConversation {
   user_id: string;
   status: string;
   created_at: string;
-  user_profile: {
+  updated_at: string;
+  user_profile?: {
     first_name: string;
     last_name: string;
     email: string;
-  };
-  latest_message?: {
-    message: string;
-    created_at: string;
   };
 }
 
@@ -44,8 +39,8 @@ interface SupportMessage {
   id: string;
   conversation_id: string;
   sender_id: string;
-  sender_type: 'user' | 'admin';
   message: string;
+  sender_type: string;
   created_at: string;
 }
 
@@ -64,6 +59,7 @@ const AdminDashboard = () => {
   const [conversationMessages, setConversationMessages] = useState<SupportMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("users");
   
   // New states for enhanced deposit functionality
   const [customDate, setCustomDate] = useState("");
@@ -83,152 +79,89 @@ const AdminDashboard = () => {
     created_at: ''
   });
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
-
-  // Code generation functions
-  const generateTAC = (userId: string) => {
-    // Generate consistent 6-character alphanumeric code based on userId
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    for (let i = 0; i < 6; i++) {
-      result += chars[(seed + i) % chars.length];
-    }
-    return result;
-  };
-
-  const generateSecurityCode = (userId: string) => {
-    // Generate consistent 6-character alphanumeric security code
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    const seed = userId.split('').reverse().join('').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    for (let i = 0; i < 6; i++) {
-      result += chars[(seed + i * 7) % chars.length];
-    }
-    return result;
-  };
-
-  const generateTIN = (userId: string) => {
-    // Generate consistent 12-digit TIN based on userId
-    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    let result = '';
-    for (let i = 0; i < 12; i++) {
-      result += ((seed + i * 3) % 10).toString();
-    }
-    return result;
-  };
-
-  const generateOTP = (userId: string) => {
-    // Generate consistent 6-digit OTP based on userId
-    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0) * 2, 0);
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += ((seed + i * 5) % 10).toString();
-    }
-    return result;
-  };
-
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: `${type} copied to clipboard`,
-    });
-  };
+  
+  // New state variables for static codes and user management
+  const [tacCode, setTacCode] = useState("");
+  const [securityCode, setSecurityCode] = useState("");
+  const [tinNumber, setTinNumber] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: ""
+  });
 
   const checkAdminAccess = async () => {
-    console.log('Checking admin access for user:', user?.id);
-    
     if (!user) {
-      console.log('No user found, redirecting to auth');
       navigate('/auth');
       return;
     }
 
     try {
-      console.log('Making admin check request for user ID:', user.id);
       const { data, error } = await supabase
         .from('admin_roles')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
 
-      console.log('Admin check response:', { data, error });
-
-      if (error) {
-        console.error('Admin check error:', error);
-        toast({
-          title: "Access Denied", 
-          description: "Error checking admin privileges.",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        console.log('No admin role found for user');
+      if (error || !data) {
         toast({
           title: "Access Denied",
-          description: "You don't have admin privileges.",
-          variant: "destructive"
+          description: "You don't have admin privileges",
+          variant: "destructive",
         });
         navigate('/');
         return;
       }
 
-      console.log('Admin access granted!');
+      setIsLoading(false);
     } catch (error) {
-      console.error('Admin check error:', error);
+      console.error('Error checking admin access:', error);
       navigate('/');
     }
   };
 
+  useEffect(() => {
+    if (!loading && user) {
+      checkAdminAccess();
+    }
+  }, [user, loading]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      fetchUsers();
+      fetchConversations();
+      fetchTransferSettings();
+      fetchPendingTransactions();
+    }
+  }, [isLoading]);
+
   const fetchUsers = async () => {
-    console.log('Admin: Starting to fetch users...');
     try {
-      // Fetch profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          user_id,
-          first_name,
-          last_name,
-          email,
-          account_number
-        `);
+        .select('user_id, first_name, last_name, email, account_number');
 
-      console.log('Admin: Profiles data:', profiles);
-      if (profilesError) {
-        console.error('Admin: Profiles error:', profilesError);
-        throw profilesError;
-      }
+      if (profilesError) throw profilesError;
 
-      // Fetch balances
       const { data: balances, error: balancesError } = await supabase
         .from('user_balances')
         .select('user_id, balance');
 
-      console.log('Admin: Balances data:', balances);
-      if (balancesError) {
-        console.error('Admin: Balances error:', balancesError);
-        throw balancesError;
-      }
+      if (balancesError) throw balancesError;
 
-      // Fetch presence - create records if they don't exist
       const { data: presence, error: presenceError } = await supabase
         .from('user_presence')
         .select('user_id, is_online');
 
-      console.log('Admin: Presence data:', presence);
-      if (presenceError) {
-        console.error('Admin: Presence error:', presenceError);
-        throw presenceError;
-      }
+      if (presenceError) console.error('Presence error:', presenceError);
 
-      // Combine data
       const usersWithBalances: UserProfile[] = profiles.map(profile => {
         const userBalance = balances.find(b => b.user_id === profile.user_id);
-        const userPresence = presence.find(p => p.user_id === profile.user_id);
+        const userPresence = presence?.find(p => p.user_id === profile.user_id);
         return {
           ...profile,
           balance: userBalance?.balance || 0,
@@ -236,7 +169,6 @@ const AdminDashboard = () => {
         };
       });
 
-      console.log('Admin: Final users data:', usersWithBalances);
       setUsers(usersWithBalances);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -248,9 +180,49 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchTransferSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_transfer_settings')
+        .select('user_id, force_success');
+
+      if (error) throw error;
+
+      const settings = data.reduce((acc, setting) => {
+        acc[setting.user_id] = setting.force_success;
+        return acc;
+      }, {} as Record<string, boolean>);
+
+      setTransferSettings(settings);
+    } catch (error) {
+      console.error('Error fetching transfer settings:', error);
+    }
+  };
+
+  const fetchPendingTransactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pending_transactions')
+        .select(`
+          *,
+          profiles:user_id (
+            first_name,
+            last_name,
+            email,
+            account_number
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching pending transactions:', error);
+    }
+  };
+
   const fetchConversations = async () => {
     try {
-      // First get conversations - use simpler query since admin can see all
       const { data: conversations, error: convError } = await supabase
         .from('support_conversations')
         .select('id, user_id, status, created_at, updated_at')
@@ -263,7 +235,6 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Get user profiles for the conversations
       const userIds = conversations.map(conv => conv.user_id);
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
@@ -272,10 +243,8 @@ const AdminDashboard = () => {
 
       if (profileError) {
         console.error('Error fetching profiles:', profileError);
-        // Continue with conversations even if profiles fail
       }
 
-      // Combine the data
       const conversationsWithProfile = conversations.map(conv => {
         const profile = profiles?.find(p => p.user_id === conv.user_id);
         return {
@@ -291,7 +260,7 @@ const AdminDashboard = () => {
       setConversations(conversationsWithProfile);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      setConversations([]); // Set empty array instead of showing error for now
+      setConversations([]);
     }
   };
 
@@ -370,7 +339,6 @@ const AdminDashboard = () => {
     setIsLoading(true);
 
     try {
-      // Prepare the date parameter
       const depositDate = customDate ? new Date(customDate).toISOString() : new Date().toISOString();
       
       const { data, error } = await supabase.rpc('admin_deposit', {
@@ -385,7 +353,6 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      // Parse the JSON response
       const result = data as any;
       if (result?.error) {
         throw new Error(result.error);
@@ -403,10 +370,10 @@ const AdminDashboard = () => {
       setCustomDescription("Admin deposit");
       fetchUsers();
     } catch (error) {
-      console.error('Error depositing funds:', error);
+      console.error('Error depositing to account:', error);
       toast({
         title: "Error",
-        description: "Failed to deposit funds.",
+        description: "Failed to deposit to account.",
         variant: "destructive"
       });
     } finally {
@@ -414,28 +381,12 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchTransferSettings = async () => {
+  const toggleTransferSetting = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('admin_transfer_settings')
-        .select('user_id, force_success');
+      const currentSetting = transferSettings[userId] ?? true;
+      const newSetting = !currentSetting;
 
-      if (error) throw error;
-
-      const settings: Record<string, boolean> = {};
-      data?.forEach(setting => {
-        settings[setting.user_id] = setting.force_success;
-      });
-      setTransferSettings(settings);
-    } catch (error) {
-      console.error('Error fetching transfer settings:', error);
-    }
-  };
-
-  const updateTransferSetting = async (userId: string, forceSuccess: boolean) => {
-    try {
-      // Check if a setting already exists for this user
-      const { data: existing, error: selectError } = await supabase
+      const { data: existingSetting, error: selectError } = await supabase
         .from('admin_transfer_settings')
         .select('id')
         .eq('user_id', userId)
@@ -443,853 +394,904 @@ const AdminDashboard = () => {
 
       if (selectError) throw selectError;
 
-      if (existing?.id) {
-        // Update existing row
+      if (existingSetting) {
         const { error: updateError } = await supabase
           .from('admin_transfer_settings')
-          .update({
-            force_success: forceSuccess,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', existing.id);
+          .update({ force_success: newSetting })
+          .eq('user_id', userId);
+
         if (updateError) throw updateError;
       } else {
-        // Insert new row
         const { error: insertError } = await supabase
           .from('admin_transfer_settings')
           .insert({
             user_id: userId,
-            force_success: forceSuccess,
+            force_success: newSetting
           });
+
         if (insertError) throw insertError;
       }
 
       setTransferSettings(prev => ({
         ...prev,
-        [userId]: forceSuccess,
+        [userId]: newSetting
       }));
+
+      if (!newSetting) {
+        // Fetch user's static codes from profile for failure mode
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('tac_code, security_code, tin_number, otp_code')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+        } else {
+          setTacCode(profile?.tac_code || "");
+          setSecurityCode(profile?.security_code || "");
+          setTinNumber(profile?.tin_number || "");
+          setOtpCode(profile?.otp_code || "");
+        }
+      }
 
       toast({
         title: "Success",
-        description: `Transfer setting updated to ${forceSuccess ? 'Force Success' : 'Force Failure'}`,
+        description: `Transfer setting updated for ${selectedUser?.first_name}`,
       });
     } catch (error) {
       console.error('Error updating transfer setting:', error);
       toast({
         title: "Error",
         description: "Failed to update transfer setting",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeTransferSetting = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('admin_transfer_settings')
-        .delete()
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      setTransferSettings(prev => {
-        const newSettings = { ...prev };
-        delete newSettings[userId];
-        return newSettings;
-      });
-
-      toast({
-        title: "Success",
-        description: `Transfer setting updated for user`,
-      });
-    } catch (error) {
-      console.error('Error updating transfer setting:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update transfer setting.",
         variant: "destructive"
       });
     }
   };
 
-  const fetchUserTransactions = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+  const deleteUser = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
 
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      
       if (error) throw error;
-      setUserTransactions(data || []);
+
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+
+      fetchUsers();
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error deleting user:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch transactions",
-        variant: "destructive",
+        description: "Failed to delete user",
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const editTransaction = (transaction: any) => {
-    setEditingTransaction(transaction);
-    setEditTransactionForm({
-      description: transaction.description || '',
-      bank_name: transaction.bank_name || '',
-      recipient: transaction.recipient || '',
-      created_at: new Date(transaction.created_at).toISOString().slice(0, 16)
-    });
-  };
+  const createNewUser = async () => {
+    if (!newUserData.email || !newUserData.password || !newUserData.firstName || !newUserData.lastName) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const updateTransaction = async () => {
-    if (!editingTransaction) return;
-
+    setIsCreatingUser(true);
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .update({
-          description: editTransactionForm.description,
-          bank_name: editTransactionForm.bank_name,
-          recipient: editTransactionForm.recipient,
-          created_at: new Date(editTransactionForm.created_at).toISOString()
-        })
-        .eq('id', editingTransaction.id);
+      const { error } = await supabase.auth.admin.createUser({
+        email: newUserData.email,
+        password: newUserData.password,
+        user_metadata: {
+          first_name: newUserData.firstName,
+          last_name: newUserData.lastName
+        },
+        email_confirm: true
+      });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Transaction updated successfully",
+        description: "New user created successfully",
       });
 
-      setEditingTransaction(null);
-      setEditTransactionForm({
-        description: '',
-        bank_name: '',
-        recipient: '',
-        created_at: ''
-      });
-
-      // Refresh transactions for selected user
-      if (selectedUser) {
-        fetchUserTransactions(selectedUser.user_id);
-      }
+      setNewUserData({ email: "", password: "", firstName: "", lastName: "" });
+      fetchUsers();
     } catch (error) {
-      console.error('Error updating transaction:', error);
+      console.error('Error creating user:', error);
       toast({
         title: "Error",
-        description: "Failed to update transaction",
-        variant: "destructive",
+        description: "Failed to create user",
+        variant: "destructive"
       });
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const approveTransaction = async (pendingTransaction: any) => {
+    setIsLoading(true);
+    try {
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: pendingTransaction.user_id,
+          type: 'transfer',
+          amount: -pendingTransaction.amount,
+          description: pendingTransaction.description,
+          recipient: pendingTransaction.recipient,
+          bank_name: pendingTransaction.bank_name,
+          account_number: pendingTransaction.account_number,
+          sort_code: pendingTransaction.sort_code,
+          status: 'completed'
+        });
+
+      if (transactionError) throw transactionError;
+
+      const { data: currentBalance, error: balanceError } = await supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', pendingTransaction.user_id)
+        .single();
+
+      if (balanceError) throw balanceError;
+
+      const newBalance = parseFloat(currentBalance.balance.toString()) - pendingTransaction.amount;
+      
+      const { error: updateError } = await supabase
+        .from('user_balances')
+        .update({ balance: newBalance })
+        .eq('user_id', pendingTransaction.user_id);
+
+      if (updateError) throw updateError;
+
+      const { error: deleteError } = await supabase
+        .from('pending_transactions')
+        .delete()
+        .eq('id', pendingTransaction.id);
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "Success",
+        description: "Transaction approved and completed",
+      });
+
+      fetchPendingTransactions();
+      fetchUsers();
+    } catch (error) {
+      console.error('Error approving transaction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve transaction",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const rejectTransaction = async (pendingTransactionId: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('pending_transactions')
+        .delete()
+        .eq('id', pendingTransactionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Transaction rejected",
+      });
+
+      fetchPendingTransactions();
+    } catch (error) {
+      console.error('Error rejecting transaction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject transaction",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user) return;
+    if (!selectedConversation || !newMessage.trim()) {
+      toast({
+        title: "Error",
+        description: "Please select a conversation and enter a message.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('support_messages')
         .insert({
           conversation_id: selectedConversation,
-          sender_id: user.id,
+          sender_id: user?.id,
           sender_type: 'admin',
-          message: newMessage,
+          message: newMessage.trim()
         });
 
       if (error) throw error;
 
+      const { error: updateError } = await supabase
+        .from('support_conversations')
+        .update({ 
+          status: 'open',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedConversation);
+
+      if (updateError) throw updateError;
+
       setNewMessage("");
       fetchConversationMessages(selectedConversation);
+      fetchConversations();
 
       toast({
-        title: "Message sent",
-        description: "Reply sent to customer",
+        title: "Success",
+        description: "Message sent successfully",
       });
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
         title: "Error",
         description: "Failed to send message",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
-  useEffect(() => {
-    const initData = async () => {
-      if (!loading && user) {
-        await checkAdminAccess();
-        await fetchUsers();
-        await fetchConversations();
-        await fetchTransferSettings();
-        setIsLoading(false);
-      }
-    };
-    initData();
-  }, [user, loading]);
-
-  // Subscribe to real-time presence updates
-  useEffect(() => {
-    const channel = supabase
-      .channel('presence-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_presence',
-        },
-        () => {
-          fetchUsers(); // Refresh users when presence changes
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // Subscribe to new conversations and messages
-  useEffect(() => {
-    const conversationsChannel = supabase
-      .channel('conversations-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'support_conversations',
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .subscribe();
-
-    const messagesChannel = supabase
-      .channel('messages-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'support_messages',
-        },
-        (payload) => {
-          if (payload.new.conversation_id === selectedConversation) {
-            fetchConversationMessages(selectedConversation);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(conversationsChannel);
-      supabase.removeChannel(messagesChannel);
-    };
-  }, [selectedConversation]);
-
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
+      <div className="min-h-screen bg-background bg-banking-gradient flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
-
-  const totalUsers = users.length;
-  const onlineUsers = users.filter(user => user.is_online).length;
-  const totalBalance = users.reduce((sum, user) => sum + user.balance, 0);
 
   return (
     <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Back to App
+          </Button>
         </div>
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalUsers}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Online Users</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{onlineUsers}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${totalBalance.toLocaleString()}</div>
-            </CardContent>
-          </Card>
+        {/* Mobile Navigation */}
+        <div className="md:hidden mb-4">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="users">Users</SelectItem>
+              <SelectItem value="balance">Balance</SelectItem>
+              <SelectItem value="transfer">Transfer</SelectItem>
+              <SelectItem value="transactions">Transactions</SelectItem>
+              <SelectItem value="support">Support</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="flex w-full overflow-x-auto gap-2 sm:grid sm:grid-cols-5">
-            <TabsTrigger value="users" className="shrink-0">User Management</TabsTrigger>
-            <TabsTrigger value="balance" className="shrink-0">Balance Control</TabsTrigger>
-            <TabsTrigger value="transfers" className="shrink-0">Transfer Control</TabsTrigger>
-            <TabsTrigger value="transactions" className="shrink-0">Transaction Manager</TabsTrigger>
-            <TabsTrigger value="support" className="shrink-0">Customer Support</TabsTrigger>
-          </TabsList>
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex border-b border-border mb-6 overflow-x-auto">
+          <button
+            className={`px-4 lg:px-6 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === "users"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("users")}
+          >
+            User Management
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === "balance"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("balance")}
+          >
+            Balance Control
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === "transfer"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("transfer")}
+          >
+            Transfer Control
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === "transactions"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("transactions")}
+          >
+            Transaction Manager
+          </button>
+          <button
+            className={`px-4 lg:px-6 py-3 text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+              activeTab === "support"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("support")}
+          >
+            Customer Support
+          </button>
+        </div>
 
-          <TabsContent value="users" className="space-y-4">
-            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-              <CardHeader>
-                <CardTitle>All Users</CardTitle>
-                <CardDescription>Real-time user status and account information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
+        {/* Content */}
+        <div className="space-y-6">
+          {/* User Management Tab */}
+          {activeTab === "users" && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4">
+                    {users.map((user) => (
+                      <Card key={user.user_id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{user.first_name} {user.last_name}</h3>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <p className="text-sm text-muted-foreground">Account: {user.account_number}</p>
+                            <p className="text-sm">Balance: ${user.balance}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <div className={`w-2 h-2 rounded-full ${user.is_online ? 'bg-green-500' : 'bg-gray-500'}`} />
+                              <span className="text-xs text-muted-foreground">
+                                {user.is_online ? 'Online' : 'Offline'}
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteUser(user.user_id)}
+                            disabled={isLoading}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Create New User</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    placeholder="Email"
+                    value={newUserData.email}
+                    onChange={(e) => setNewUserData({...newUserData, email: e.target.value})}
+                  />
+                  <Input
+                    placeholder="Password"
+                    type="password"
+                    value={newUserData.password}
+                    onChange={(e) => setNewUserData({...newUserData, password: e.target.value})}
+                  />
+                  <Input
+                    placeholder="First Name"
+                    value={newUserData.firstName}
+                    onChange={(e) => setNewUserData({...newUserData, firstName: e.target.value})}
+                  />
+                  <Input
+                    placeholder="Last Name"
+                    value={newUserData.lastName}
+                    onChange={(e) => setNewUserData({...newUserData, lastName: e.target.value})}
+                  />
+                </div>
+                <Button
+                  onClick={createNewUser}
+                  disabled={isCreatingUser}
+                  className="mt-4"
+                >
+                  {isCreatingUser ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create User'
+                  )}
+                </Button>
+              </Card>
+            </div>
+          )}
+
+          {/* Balance Control Tab */}
+          {activeTab === "balance" && (
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Balance Control</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Select User</label>
+                    <Select value={selectedUser?.user_id || ""} onValueChange={(value) => {
+                      const user = users.find(u => u.user_id === value);
+                      setSelectedUser(user || null);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a user" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user.user_id} value={user.user_id}>
+                            {user.first_name} {user.last_name} (${user.balance})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Operation</label>
+                    <Select value={balanceOperation} onValueChange={(value: "set" | "deposit") => setBalanceOperation(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="set">Set Balance</SelectItem>
+                        <SelectItem value="deposit">Deposit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {balanceOperation === "set" && (
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">New Balance</label>
+                      <Input
+                        type="number"
+                        value={newBalance}
+                        onChange={(e) => setNewBalance(e.target.value)}
+                        placeholder="0.00"
+                      />
+                      <Button 
+                        onClick={updateUserBalance} 
+                        disabled={!selectedUser || !newBalance || isLoading}
+                        className="w-full mt-2"
+                      >
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Update Balance
+                      </Button>
+                    </div>
+                  )}
+
+                  {balanceOperation === "deposit" && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Deposit Amount</label>
+                        <Input
+                          type="number"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="font-medium">{user.first_name} {user.last_name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <p className="text-sm text-muted-foreground">Account: {user.account_number}</p>
+                          <label className="text-sm font-medium mb-2 block">Custom Date</label>
+                          <Input
+                            type="datetime-local"
+                            value={customDate}
+                            onChange={(e) => setCustomDate(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Bank Name</label>
+                          <Input
+                            value={customBank}
+                            onChange={(e) => setCustomBank(e.target.value)}
+                            placeholder="Bank Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Sender Name</label>
+                          <Input
+                            value={customSender}
+                            onChange={(e) => setCustomSender(e.target.value)}
+                            placeholder="Sender Name"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Description</label>
+                          <Input
+                            value={customDescription}
+                            onChange={(e) => setCustomDescription(e.target.value)}
+                            placeholder="Transaction description"
+                          />
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={user.is_online ? "default" : "secondary"}>
-                          {user.is_online ? "Online" : "Offline"}
-                        </Badge>
-                        <span className="font-semibold">${user.balance.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="balance" className="space-y-4">
-            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+                      <Button 
+                        onClick={depositToUserAccount} 
+                        disabled={!selectedUser || !depositAmount || isLoading}
+                        className="w-full"
+                      >
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        Deposit to Account
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {selectedUser && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <p><strong>Name:</strong> {selectedUser.first_name} {selectedUser.last_name}</p>
+                      <p><strong>Email:</strong> {selectedUser.email}</p>
+                      <p><strong>Account:</strong> {selectedUser.account_number}</p>
+                      <p><strong>Current Balance:</strong> ${selectedUser.balance}</p>
+                      <p><strong>Status:</strong> 
+                        <Badge variant={selectedUser.is_online ? "default" : "secondary"} className="ml-2">
+                          {selectedUser.is_online ? "Online" : "Offline"}
+                        </Badge>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Transfer Control Tab */}
+          {activeTab === "transfer" && (
+            <Card>
               <CardHeader>
-                <CardTitle>Balance Management</CardTitle>
-                <CardDescription>Deposit funds or set user account balances</CardDescription>
+                <CardTitle>Transfer Control</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Select User</Label>
-                  <select 
-                    className="w-full p-2 rounded border"
-                    onChange={(e) => {
-                      const user = users.find(u => u.id === e.target.value);
-                      setSelectedUser(user || null);
-                    }}
-                  >
-                    <option value="">Choose a user...</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.first_name} {user.last_name} - Current: ${user.balance}
-                      </option>
-                    ))}
-                  </select>
+              <CardContent className="space-y-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Select User</label>
+                  <Select value={selectedUser?.user_id || ""} onValueChange={(value) => {
+                    const user = users.find(u => u.user_id === value);
+                    setSelectedUser(user || null);
+                    if (user) {
+                      const isFailureMode = !(transferSettings[value] ?? true);
+                      if (isFailureMode) {
+                        // Fetch user's static codes for failure mode
+                        supabase
+                          .from('profiles')
+                          .select('tac_code, security_code, tin_number, otp_code')
+                          .eq('user_id', value)
+                          .single()
+                          .then(({ data, error }) => {
+                            if (!error && data) {
+                              setTacCode(data.tac_code || "");
+                              setSecurityCode(data.security_code || "");
+                              setTinNumber(data.tin_number || "");
+                              setOtpCode(data.otp_code || "");
+                            }
+                          });
+                      }
+                    }
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a user to control their transfer settings" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.user_id} value={user.user_id}>
+                          {user.first_name} {user.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {selectedUser && (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-secondary/50 rounded-lg">
-                      <p><strong>Selected:</strong> {selectedUser.first_name} {selectedUser.last_name}</p>
-                      <p><strong>Account Number:</strong> {selectedUser.account_number}</p>
-                      <p><strong>Current Balance:</strong> ${selectedUser.balance.toLocaleString()}</p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Operation Type</Label>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">Transfer Mode for {selectedUser.first_name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {transferSettings[selectedUser.user_id] ?? true ? "Success Mode" : "Failure Mode"}
+                        </p>
+                      </div>
                       <div className="flex space-x-2">
                         <Button
-                          variant={balanceOperation === "deposit" ? "default" : "outline"}
-                          onClick={() => setBalanceOperation("deposit")}
-                          className="flex-1"
+                          variant={transferSettings[selectedUser.user_id] ?? true ? "default" : "outline"}
+                          onClick={() => toggleTransferSetting(selectedUser.user_id)}
                         >
-                          Deposit Money
+                          Force Success
                         </Button>
                         <Button
-                          variant={balanceOperation === "set" ? "default" : "outline"}
-                          onClick={() => setBalanceOperation("set")}
-                          className="flex-1"
+                          variant={!(transferSettings[selectedUser.user_id] ?? true) ? "destructive" : "outline"}
+                          onClick={() => toggleTransferSetting(selectedUser.user_id)}
                         >
-                          Set Balance
+                          Force Failure
                         </Button>
                       </div>
                     </div>
 
-                     {balanceOperation === "deposit" ? (
-                       <div className="space-y-4">
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <div className="space-y-2">
-                             <Label htmlFor="depositAmount">Deposit Amount</Label>
-                             <Input
-                               id="depositAmount"
-                               type="number"
-                               placeholder="0.00"
-                               value={depositAmount}
-                               onChange={(e) => setDepositAmount(e.target.value)}
-                             />
-                           </div>
-                           <div className="space-y-2">
-                             <Label htmlFor="customDate">Transaction Date</Label>
-                             <Input
-                               id="customDate"
-                               type="datetime-local"
-                               value={customDate}
-                               onChange={(e) => setCustomDate(e.target.value)}
-                             />
-                           </div>
-                           <div className="space-y-2">
-                             <Label htmlFor="customBank">Bank Name</Label>
-                             <Input
-                               id="customBank"
-                               type="text"
-                               value={customBank}
-                               onChange={(e) => setCustomBank(e.target.value)}
-                             />
-                           </div>
-                           <div className="space-y-2">
-                             <Label htmlFor="customSender">Sender Name</Label>
-                             <Input
-                               id="customSender"
-                               type="text"
-                               value={customSender}
-                               onChange={(e) => setCustomSender(e.target.value)}
-                             />
-                           </div>
-                         </div>
-                         <div className="space-y-2">
-                           <Label htmlFor="customDescription">Description</Label>
-                           <Input
-                             id="customDescription"
-                             type="text"
-                             value={customDescription}
-                             onChange={(e) => setCustomDescription(e.target.value)}
-                           />
-                         </div>
-                         <Button 
-                           onClick={depositToUserAccount} 
-                           disabled={isLoading}
-                           className="w-full"
-                         >
-                           {isLoading ? "Processing..." : "Deposit Funds"}
-                         </Button>
-                       </div>
-                    ) : (
-                      <div className="space-y-4">
+                    {!(transferSettings[selectedUser.user_id] ?? true) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div className="space-y-2">
-                          <Label htmlFor="newBalance">New Balance</Label>
-                          <Input
-                            id="newBalance"
-                            type="number"
-                            placeholder="0.00"
-                            value={newBalance}
-                            onChange={(e) => setNewBalance(e.target.value)}
-                          />
+                          <label className="text-sm font-medium">TAC Code</label>
+                          <div className="flex space-x-2">
+                            <Input 
+                              value={tacCode} 
+                              readOnly 
+                              className="font-mono text-center bg-secondary text-xs"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(tacCode);
+                                toast({ title: "Copied", description: "TAC code copied to clipboard" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <Button 
-                          onClick={updateUserBalance} 
-                          disabled={isLoading}
-                          className="w-full"
-                        >
-                          {isLoading ? "Updating..." : "Set Balance"}
-                        </Button>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Security Code</label>
+                          <div className="flex space-x-2">
+                            <Input 
+                              value={securityCode} 
+                              readOnly 
+                              className="font-mono text-center bg-secondary text-xs"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(securityCode);
+                                toast({ title: "Copied", description: "Security code copied to clipboard" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">TIN Number</label>
+                          <div className="flex space-x-2">
+                            <Input 
+                              value={tinNumber} 
+                              readOnly 
+                              className="font-mono text-center bg-secondary text-xs"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(tinNumber);
+                                toast({ title: "Copied", description: "TIN number copied to clipboard" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">OTP Code</label>
+                          <div className="flex space-x-2">
+                            <Input 
+                              value={otpCode} 
+                              readOnly 
+                              className="font-mono text-center bg-secondary text-xs"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                navigator.clipboard.writeText(otpCode);
+                                toast({ title: "Copied", description: "OTP code copied to clipboard" });
+                              }}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
               </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="transfers" className="space-y-4">
-            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-              <CardHeader>
-                <CardTitle>Transfer Success Control</CardTitle>
-                <CardDescription>Control whether user transfers succeed or fail</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="p-4 border rounded-lg space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div>
-                            <p className="font-medium">{user.first_name} {user.last_name}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
-                            <p className="text-sm text-muted-foreground">Account: {user.account_number}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant={transferSettings[user.user_id] === true ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => updateTransferSetting(user.user_id, true)}
-                          >
-                            Success Mode
-                          </Button>
-                          <Button
-                            variant={transferSettings[user.user_id] === false ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={() => updateTransferSetting(user.user_id, false)}
-                          >
-                            Failure Mode
-                          </Button>
-                          <Button
-                            variant={transferSettings[user.user_id] === undefined ? "secondary" : "outline"}
-                            size="sm"
-                            onClick={() => removeTransferSetting(user.user_id)}
-                          >
-                            Reset
-                          </Button>
-                          <Badge variant={transferSettings[user.user_id] === true ? "default" : transferSettings[user.user_id] === false ? "destructive" : "secondary"}>
-                            {transferSettings[user.user_id] === true ? "Success" : transferSettings[user.user_id] === false ? "Failure" : "Random"}
-                          </Badge>
-                        </div>
-                      </div>
-                       
-                       {transferSettings[user.user_id] === false && (
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 pt-3 border-t border-border/50">
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">TAC Code</label>
-                            <div className="flex items-center space-x-2">
-                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
-                                {generateTAC(user.user_id)}
-                              </code>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => copyToClipboard(generateTAC(user.user_id), "TAC code")}
-                              >
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">Security Code</label>
-                            <div className="flex items-center space-x-2">
-                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
-                                {generateSecurityCode(user.user_id)}
-                              </code>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => copyToClipboard(generateSecurityCode(user.user_id), "Security code")}
-                              >
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">TIN Number</label>
-                            <div className="flex items-center space-x-2">
-                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
-                                {generateTIN(user.user_id)}
-                              </code>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => copyToClipboard(generateTIN(user.user_id), "TIN number")}
-                              >
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-xs font-medium text-muted-foreground">OTP Code</label>
-                            <div className="flex items-center space-x-2">
-                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
-                                {generateOTP(user.user_id)}
-                              </code>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => copyToClipboard(generateOTP(user.user_id), "OTP code")}
-                              >
-                                Copy
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                       )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="transactions" className="space-y-4">
-            <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-              <CardHeader>
-                <CardTitle>Transaction Management</CardTitle>
-                <CardDescription>Edit existing user transactions</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Select User</Label>
-                  <select 
-                    className="w-full p-2 rounded border"
-                    onChange={(e) => {
-                      const user = users.find(u => u.id === e.target.value);
-                      setSelectedUser(user || null);
-                      if (user) {
-                        fetchUserTransactions(user.user_id);
-                      } else {
-                        setUserTransactions([]);
-                      }
-                    }}
-                  >
-                    <option value="">Choose a user to view transactions...</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.first_name} {user.last_name} - {user.account_number}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedUser && userTransactions.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Transactions for {selectedUser.first_name} {selectedUser.last_name}</h3>
-                    <ScrollArea className="h-96">
-                      <div className="space-y-2">
-                        {userTransactions.map((transaction) => (
-                          <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex-1 space-y-1">
-                              <p className="font-medium">{transaction.description}</p>
-                              <p className="text-sm text-muted-foreground">
-                                Amount: ${transaction.amount} | Date: {new Date(transaction.created_at).toLocaleString()}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Bank: {transaction.bank_name || 'N/A'} | From: {transaction.recipient || 'N/A'}
-                              </p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => editTransaction(transaction)}
-                            >
-                              Edit
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-
-                {selectedUser && userTransactions.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No transactions found for this user
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Edit Transaction Modal */}
-            {editingTransaction && (
-              <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
+              {/* Pending Transactions */}
+              <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle>Edit Transaction</CardTitle>
-                  <CardDescription>Modify transaction details</CardDescription>
+                  <CardTitle>Pending Transactions (Awaiting Approval)</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-secondary/50 rounded-lg">
-                    <p><strong>Transaction ID:</strong> {editingTransaction.id}</p>
-                    <p><strong>Amount:</strong> ${editingTransaction.amount}</p>
-                    <p><strong>Type:</strong> {editingTransaction.type}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="editDescription">Description</Label>
-                      <Input
-                        id="editDescription"
-                        type="text"
-                        value={editTransactionForm.description}
-                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, description: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="editBankName">Bank Name</Label>
-                      <Input
-                        id="editBankName"
-                        type="text"
-                        value={editTransactionForm.bank_name}
-                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, bank_name: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="editRecipient">Sender/Recipient</Label>
-                      <Input
-                        id="editRecipient"
-                        type="text"
-                        value={editTransactionForm.recipient}
-                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, recipient: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="editDate">Transaction Date</Label>
-                      <Input
-                        id="editDate"
-                        type="datetime-local"
-                        value={editTransactionForm.created_at}
-                        onChange={(e) => setEditTransactionForm(prev => ({ ...prev, created_at: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Button 
-                      onClick={updateTransaction} 
-                      disabled={isLoading}
-                      className="flex-1"
-                    >
-                      {isLoading ? "Updating..." : "Update Transaction"}
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => setEditingTransaction(null)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
+                <CardContent>
+                  <div className="space-y-4">
+                    {pendingTransactions.length === 0 ? (
+                      <p className="text-muted-foreground">No pending transactions</p>
+                    ) : (
+                      pendingTransactions.map((transaction) => (
+                        <Card key={transaction.id} className="p-4">
+                          <div className="flex flex-col space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-semibold">
+                                  {transaction.profiles?.first_name} {transaction.profiles?.last_name}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">{transaction.profiles?.email}</p>
+                                <p className="text-sm text-muted-foreground">Account: {transaction.profiles?.account_number}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-semibold text-red-600">-${transaction.amount}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(transaction.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="border-t pt-3">
+                              <p className="text-sm"><strong>To:</strong> {transaction.recipient}</p>
+                              <p className="text-sm"><strong>Bank:</strong> {transaction.bank_name}</p>
+                              <p className="text-sm"><strong>Account:</strong> {transaction.account_number}</p>
+                              <p className="text-sm"><strong>Description:</strong> {transaction.description}</p>
+                            </div>
+                            
+                            <div className="flex space-x-2 pt-2">
+                              <Button
+                                onClick={() => approveTransaction(transaction)}
+                                disabled={isLoading}
+                                className="flex-1"
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={() => rejectTransaction(transaction.id)}
+                                disabled={isLoading}
+                                className="flex-1"
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </TabsContent>
+            </Card>
+          )}
 
-          <TabsContent value="support" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Conversations List */}
+          {/* Support Tab */}
+          {activeTab === "support" && (
+            <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Support Conversations</CardTitle>
-                  <CardDescription>
-                    Active customer support conversations
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-96">
-                    <div className="space-y-2">
-                      {conversations.map(conversation => (
+                  <div className="space-y-2">
+                    {conversations.length === 0 ? (
+                      <p className="text-muted-foreground">No conversations found</p>
+                    ) : (
+                      conversations.map((conversation) => (
                         <div
                           key={conversation.id}
-                          className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
-                            selectedConversation === conversation.id ? 'bg-muted' : ''
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                            selectedConversation === conversation.id
+                              ? "bg-primary/10 border-primary"
+                              : "hover:bg-secondary/50"
                           }`}
                           onClick={() => {
                             setSelectedConversation(conversation.id);
                             fetchConversationMessages(conversation.id);
                           }}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex justify-between items-start">
                             <div>
-                              <div className="font-medium">
-                                {conversation.user_profile.first_name} {conversation.user_profile.last_name}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {conversation.user_profile.email}
-                              </div>
+                              <p className="font-medium">
+                                {conversation.user_profile?.first_name} {conversation.user_profile?.last_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {conversation.user_profile?.email}
+                              </p>
                             </div>
                             <Badge variant={conversation.status === 'open' ? 'default' : 'secondary'}>
                               {conversation.status}
                             </Badge>
                           </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(conversation.updated_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {selectedConversation && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Messages</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {conversationMessages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`p-3 rounded-lg ${
+                            message.sender_type === 'admin'
+                              ? "bg-primary/10 ml-4"
+                              : "bg-secondary/50 mr-4"
+                          }`}
+                        >
+                          <p className="text-sm">{message.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {message.sender_type === 'admin' ? 'You' : 'User'} •{' '}
+                            {new Date(message.created_at).toLocaleString()}
+                          </p>
                         </div>
                       ))}
                     </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
 
-              {/* Chat Interface */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {selectedConversation ? 'Customer Chat' : 'Select a Conversation'}
-                  </CardTitle>
-                  <CardDescription>
-                    {selectedConversation ? 'Respond to customer messages' : 'Choose a conversation to start chatting'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {selectedConversation ? (
-                    <div className="space-y-4">
-                      <ScrollArea className="h-64 border rounded p-3">
-                        <div className="space-y-2">
-                          {conversationMessages.map(message => (
-                            <div
-                              key={message.id}
-                              className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-[80%] rounded-lg p-2 text-sm ${
-                                  message.sender_type === 'admin'
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted'
-                                }`}
-                              >
-                                <div className="font-medium text-xs mb-1">
-                                  {message.sender_type === 'admin' ? 'Admin' : 'Customer'}
-                                </div>
-                                {message.message}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
+                    <Separator className="my-4" />
 
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="Type your reply..."
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          className="min-h-[80px]"
-                        />
-                        <Button onClick={sendMessage} className="w-full">
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Send Reply
-                        </Button>
-                      </div>
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Type your response..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        rows={3}
+                      />
+                      <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+                        Send Message
+                      </Button>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      Select a conversation to view messages
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </div>
   );
