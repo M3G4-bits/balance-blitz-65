@@ -117,6 +117,16 @@ const AdminDashboard = () => {
     return result;
   };
 
+  const generateOTP = (userId: string) => {
+    // Generate consistent 6-digit OTP based on userId
+    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0) * 2, 0);
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += ((seed + i * 5) % 10).toString();
+    }
+    return result;
+  };
+
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -959,9 +969,9 @@ const AdminDashboard = () => {
                           </Badge>
                         </div>
                       </div>
-                      
-                      {transferSettings[user.user_id] === false && (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-3 border-t border-border/50">
+                       
+                       {transferSettings[user.user_id] === false && (
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 pt-3 border-t border-border/50">
                           <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">TAC Code</label>
                             <div className="flex items-center space-x-2">
@@ -1009,8 +1019,24 @@ const AdminDashboard = () => {
                               </Button>
                             </div>
                           </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">OTP Code</label>
+                            <div className="flex items-center space-x-2">
+                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
+                                {generateOTP(user.user_id)}
+                              </code>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(generateOTP(user.user_id), "OTP code")}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
                         </div>
-                      )}
+                       )}
                     </div>
                   ))}
                 </div>

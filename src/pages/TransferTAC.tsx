@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ export default function TransferTAC() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tacCode, setTacCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -27,7 +28,7 @@ export default function TransferTAC() {
     return null;
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (tacCode.length !== 6) {
       toast({
         title: "Invalid TAC Code",
@@ -37,8 +38,14 @@ export default function TransferTAC() {
       return;
     }
 
+    setIsLoading(true);
+    
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     // Navigate to security code page
     navigate("/transfer/security", { state: { ...transferData, tacCode } });
+    setIsLoading(false);
   };
 
   return (
@@ -100,9 +107,16 @@ export default function TransferTAC() {
                 onClick={handleSubmit} 
                 className="flex-1 bg-primary hover:bg-primary/90"
                 size="lg"
-                disabled={tacCode.length !== 6}
+                disabled={tacCode.length !== 6 || isLoading}
               >
-                Continue
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </div>
           </CardContent>

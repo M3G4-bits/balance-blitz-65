@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ export default function TransferTIN() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tinNumber, setTinNumber] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -27,7 +28,7 @@ export default function TransferTIN() {
     return null;
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (tinNumber.length < 10) {
       toast({
         title: "Invalid TIN",
@@ -37,8 +38,14 @@ export default function TransferTIN() {
       return;
     }
 
+    setIsLoading(true);
+    
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     // Navigate to OTP page
     navigate("/transfer/otp", { state: { ...transferData, tinNumber } });
+    setIsLoading(false);
   };
 
   return (
@@ -97,9 +104,16 @@ export default function TransferTIN() {
                 onClick={handleSubmit} 
                 className="flex-1 bg-primary hover:bg-primary/90"
                 size="lg"
-                disabled={tinNumber.length < 10}
+                disabled={tinNumber.length < 10 || isLoading}
               >
-                Continue
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </div>
           </CardContent>

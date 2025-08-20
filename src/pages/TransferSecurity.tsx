@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ArrowLeft, Key } from "lucide-react";
+import { ArrowLeft, Key, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
@@ -14,6 +14,7 @@ export default function TransferSecurity() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [securityCode, setSecurityCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -27,7 +28,7 @@ export default function TransferSecurity() {
     return null;
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (securityCode.length !== 6) {
       toast({
         title: "Invalid Security Code",
@@ -37,8 +38,14 @@ export default function TransferSecurity() {
       return;
     }
 
+    setIsLoading(true);
+    
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     // Navigate to TIN page
     navigate("/transfer/tin", { state: { ...transferData, securityCode } });
+    setIsLoading(false);
   };
 
   return (
@@ -100,9 +107,16 @@ export default function TransferSecurity() {
                 onClick={handleSubmit} 
                 className="flex-1 bg-primary hover:bg-primary/90"
                 size="lg"
-                disabled={securityCode.length !== 6}
+                disabled={securityCode.length !== 6 || isLoading}
               >
-                Continue
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </div>
           </CardContent>
