@@ -84,6 +84,47 @@ const AdminDashboard = () => {
   });
   const [userTransactions, setUserTransactions] = useState<any[]>([]);
 
+  // Code generation functions
+  const generateTAC = (userId: string) => {
+    // Generate consistent 6-character alphanumeric code based on userId
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    for (let i = 0; i < 6; i++) {
+      result += chars[(seed + i) % chars.length];
+    }
+    return result;
+  };
+
+  const generateSecurityCode = (userId: string) => {
+    // Generate consistent 6-character alphanumeric security code
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
+    const seed = userId.split('').reverse().join('').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    for (let i = 0; i < 6; i++) {
+      result += chars[(seed + i * 7) % chars.length];
+    }
+    return result;
+  };
+
+  const generateTIN = (userId: string) => {
+    // Generate consistent 12-digit TIN based on userId
+    const seed = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    let result = '';
+    for (let i = 0; i < 12; i++) {
+      result += ((seed + i * 3) % 10).toString();
+    }
+    return result;
+  };
+
+  const copyToClipboard = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: `${type} copied to clipboard`,
+    });
+  };
+
   const checkAdminAccess = async () => {
     console.log('Checking admin access for user:', user?.id);
     
@@ -882,40 +923,94 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   {users.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div>
-                          <p className="font-medium">{user.first_name} {user.last_name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                          <p className="text-sm text-muted-foreground">Account: {user.account_number}</p>
+                    <div key={user.id} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <p className="font-medium">{user.first_name} {user.last_name}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                            <p className="text-sm text-muted-foreground">Account: {user.account_number}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant={transferSettings[user.user_id] === true ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updateTransferSetting(user.user_id, true)}
+                          >
+                            Success Mode
+                          </Button>
+                          <Button
+                            variant={transferSettings[user.user_id] === false ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={() => updateTransferSetting(user.user_id, false)}
+                          >
+                            Failure Mode
+                          </Button>
+                          <Button
+                            variant={transferSettings[user.user_id] === undefined ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => removeTransferSetting(user.user_id)}
+                          >
+                            Reset
+                          </Button>
+                          <Badge variant={transferSettings[user.user_id] === true ? "default" : transferSettings[user.user_id] === false ? "destructive" : "secondary"}>
+                            {transferSettings[user.user_id] === true ? "Success" : transferSettings[user.user_id] === false ? "Failure" : "Random"}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant={transferSettings[user.user_id] === true ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => updateTransferSetting(user.user_id, true)}
-                        >
-                          Force Success
-                        </Button>
-                        <Button
-                          variant={transferSettings[user.user_id] === false ? "destructive" : "outline"}
-                          size="sm"
-                          onClick={() => updateTransferSetting(user.user_id, false)}
-                        >
-                          Force Failure
-                        </Button>
-                        <Button
-                          variant={transferSettings[user.user_id] === undefined ? "secondary" : "outline"}
-                          size="sm"
-                          onClick={() => removeTransferSetting(user.user_id)}
-                        >
-                          Reset
-                        </Button>
-                        <Badge variant={transferSettings[user.user_id] === true ? "default" : transferSettings[user.user_id] === false ? "destructive" : "secondary"}>
-                          {transferSettings[user.user_id] === true ? "Success" : transferSettings[user.user_id] === false ? "Failure" : "Random"}
-                        </Badge>
-                      </div>
+                      
+                      {transferSettings[user.user_id] === false && (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 pt-3 border-t border-border/50">
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">TAC Code</label>
+                            <div className="flex items-center space-x-2">
+                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
+                                {generateTAC(user.user_id)}
+                              </code>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(generateTAC(user.user_id), "TAC code")}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Security Code</label>
+                            <div className="flex items-center space-x-2">
+                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
+                                {generateSecurityCode(user.user_id)}
+                              </code>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(generateSecurityCode(user.user_id), "Security code")}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">TIN Number</label>
+                            <div className="flex items-center space-x-2">
+                              <code className="bg-muted p-2 rounded text-sm font-mono select-all flex-1">
+                                {generateTIN(user.user_id)}
+                              </code>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => copyToClipboard(generateTIN(user.user_id), "TIN number")}
+                              >
+                                Copy
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

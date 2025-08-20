@@ -11,6 +11,10 @@ import Transfer from "./pages/Transfer";
 import TransferConfirm from "./pages/TransferConfirm";
 import TransferSuccess from "./pages/TransferSuccess";
 import TransferFailure from "./pages/TransferFailure";
+import TransferTAC from "./pages/TransferTAC";
+import TransferSecurity from "./pages/TransferSecurity";
+import TransferTIN from "./pages/TransferTIN";
+import TransferOTP from "./pages/TransferOTP";
 import Deposit from "./pages/Deposit";
 import AccountSummary from "./pages/AccountSummary";
 import TravelLeisure from "./pages/TravelLeisure";
@@ -42,8 +46,12 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/my-account" element={<MyAccount />} />
-          <Route path="/transfer" element={<Transfer />} />
+           <Route path="/transfer" element={<Transfer />} />
           <Route path="/transfer/confirm" element={<TransferConfirm />} />
+          <Route path="/transfer/tac" element={<TransferTAC />} />
+          <Route path="/transfer/security" element={<TransferSecurity />} />
+          <Route path="/transfer/tin" element={<TransferTIN />} />
+          <Route path="/transfer/otp" element={<TransferOTP />} />
           <Route path="/transfer/success" element={<TransferSuccess />} />
           <Route path="/transfer/failure" element={<TransferFailure />} />
           <Route path="/deposit" element={<Deposit />} />

