@@ -66,6 +66,7 @@ export type Database = {
           bank_name: string | null
           created_at: string
           description: string
+          email: string | null
           id: string
           recipient: string
           sort_code: string | null
@@ -79,6 +80,7 @@ export type Database = {
           bank_name?: string | null
           created_at?: string
           description: string
+          email?: string | null
           id?: string
           recipient: string
           sort_code?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           bank_name?: string | null
           created_at?: string
           description?: string
+          email?: string | null
           id?: string
           recipient?: string
           sort_code?: string | null
@@ -306,6 +309,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_user: {
+        Args: { admin_user_id: string; target_user_id: string }
+        Returns: Json
+      }
       admin_deposit: {
         Args:
           | {

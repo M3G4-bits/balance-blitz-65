@@ -456,9 +456,15 @@ const AdminDashboard = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data, error } = await supabase.rpc('admin_delete_user', {
+        target_user_id: userId,
+        admin_user_id: user?.id
+      });
       
       if (error) throw error;
+      if (data && typeof data === 'object' && 'error' in data && data.error) {
+        throw new Error(data.error as string);
+      }
 
       toast({
         title: "Success",
