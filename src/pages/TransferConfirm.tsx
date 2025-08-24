@@ -45,17 +45,24 @@ export default function TransferConfirm() {
     // Check if admin has set specific transfer settings for this user
     if (user) {
       try {
+        console.log('Checking transfer settings for user:', user.id);
         const { data: transferSetting, error } = await supabase
           .from('admin_transfer_settings')
           .select('force_success')
           .eq('user_id', user.id)
           .maybeSingle();
         
-        if (!error && transferSetting) {
+        console.log('Transfer setting query result:', { transferSetting, error });
+        
+        if (!error && transferSetting !== null) {
           // Admin has set a specific setting for this user - this ALWAYS takes priority
           console.log('Admin setting found:', transferSetting.force_success);
           shouldSucceed = transferSetting.force_success;
           hasAdminSetting = true;
+        } else if (error) {
+          console.error('Error checking transfer settings:', error);
+        } else {
+          console.log('No admin setting found for user');
         }
       } catch (error) {
         console.error('Error checking transfer settings:', error);

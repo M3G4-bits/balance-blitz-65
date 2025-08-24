@@ -328,12 +328,16 @@ const AdminDashboard = () => {
     setIsLoading(true);
 
     try {
+      // Use upsert with proper conflict resolution on user_id
       const { error } = await supabase
         .from('user_balances')
         .upsert({
           user_id: selectedUser.user_id,
           balance: Math.round(balanceValue * 100) / 100, // Ensure 2 decimal places
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
         });
 
       if (error) throw error;
@@ -416,37 +420,30 @@ const AdminDashboard = () => {
     try {
       const currentSetting = transferSettings[userId] ?? true;
       const newSetting = !currentSetting;
+      
+      console.log(`Toggling transfer setting for user ${userId}: ${currentSetting} -> ${newSetting}`);
 
-      const { data: existingSetting, error: selectError } = await supabase
+      // Use upsert for better reliability
+      const { error } = await supabase
         .from('admin_transfer_settings')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .upsert({
+          user_id: userId,
+          force_success: newSetting,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
+        });
 
-      if (selectError) throw selectError;
+      if (error) throw error;
 
-      if (existingSetting) {
-        const { error: updateError } = await supabase
-          .from('admin_transfer_settings')
-          .update({ force_success: newSetting })
-          .eq('user_id', userId);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('admin_transfer_settings')
-          .insert({
-            user_id: userId,
-            force_success: newSetting
-          });
-
-        if (insertError) throw insertError;
-      }
-
+      // Update local state
       setTransferSettings(prev => ({
         ...prev,
         [userId]: newSetting
       }));
+      
+      console.log(`Successfully updated transfer setting for user ${userId} to ${newSetting}`);
 
       if (!newSetting) {
         // Fetch user's static codes from profile for failure mode
