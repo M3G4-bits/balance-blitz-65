@@ -40,6 +40,7 @@ export default function TransferConfirm() {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     let shouldSucceed = false; // Default to failure flow
+    let hasAdminSetting = false;
     
     // Check if admin has set specific transfer settings for this user
     if (user) {
@@ -51,24 +52,31 @@ export default function TransferConfirm() {
           .maybeSingle();
         
         if (!error && transferSetting) {
-          // Admin has set a specific setting for this user - this takes priority
+          // Admin has set a specific setting for this user - this ALWAYS takes priority
+          console.log('Admin setting found:', transferSetting.force_success);
           shouldSucceed = transferSetting.force_success;
-        } else {
-          // No admin setting - use alternating pattern only if no force failure setting exists
-          shouldSucceed = transferCount % 2 === 0;
+          hasAdminSetting = true;
         }
       } catch (error) {
         console.error('Error checking transfer settings:', error);
-        // If there's an error, fall back to the alternating pattern
-        shouldSucceed = transferCount % 2 === 0;
       }
     }
 
-    // Update transfer count
-    const newCount = transferCount + 1;
-    localStorage.setItem('transferCount', newCount.toString());
+    // Only use alternating pattern if NO admin setting exists
+    if (!hasAdminSetting) {
+      shouldSucceed = transferCount % 2 === 0;
+      console.log('No admin setting, using alternating pattern. Count:', transferCount, 'shouldSucceed:', shouldSucceed);
+    }
+
+    // Update transfer count only if no admin setting (to preserve alternating pattern for normal users)
+    if (!hasAdminSetting) {
+      const newCount = transferCount + 1;
+      localStorage.setItem('transferCount', newCount.toString());
+    }
     
     setIsLoading(false);
+    
+    console.log('Final routing decision - shouldSucceed:', shouldSucceed, 'hasAdminSetting:', hasAdminSetting);
     
     // Route based on transfer mode
     if (shouldSucceed) {
