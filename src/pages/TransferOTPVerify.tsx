@@ -91,7 +91,8 @@ export default function TransferOTPVerify() {
         return;
       }
 
-      // Check if user is in force failure mode
+      // Check if user is in force failure mode - this overrides all other logic
+      // When Force Failure is enabled, ALWAYS keep transactions pending until admin approval
       const { data: transferSetting } = await supabase
         .from('admin_transfer_settings')
         .select('force_success')
@@ -101,7 +102,8 @@ export default function TransferOTPVerify() {
       const isForceFailure = transferSetting && !transferSetting.force_success;
 
       if (isForceFailure) {
-        // Keep transaction pending for admin approval
+        // Force Failure mode enabled - transaction remains pending until admin manually approves
+        // This overrides any alternating success/failure patterns
         toast.success("Transfer submitted for approval!");
         navigate('/transfer-success', { 
           state: { 
@@ -112,7 +114,7 @@ export default function TransferOTPVerify() {
           } 
         });
       } else {
-        // Process successful transfer immediately
+        // No Force Failure setting OR Force Success is enabled - complete transfer immediately
         const newBalance = balance - transferData.amount;
         setBalance(newBalance);
         

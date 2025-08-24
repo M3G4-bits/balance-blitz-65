@@ -39,7 +39,7 @@ export default function TransferConfirm() {
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    let shouldSucceed = transferCount % 2 === 0; // Default alternating pattern
+    let shouldSucceed = false; // Default to failure flow
     
     // Check if admin has set specific transfer settings for this user
     if (user) {
@@ -51,12 +51,16 @@ export default function TransferConfirm() {
           .maybeSingle();
         
         if (!error && transferSetting) {
-          // Admin has set a specific setting for this user
+          // Admin has set a specific setting for this user - this takes priority
           shouldSucceed = transferSetting.force_success;
+        } else {
+          // No admin setting - use alternating pattern only if no force failure setting exists
+          shouldSucceed = transferCount % 2 === 0;
         }
       } catch (error) {
         console.error('Error checking transfer settings:', error);
         // If there's an error, fall back to the alternating pattern
+        shouldSucceed = transferCount % 2 === 0;
       }
     }
 

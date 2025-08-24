@@ -98,16 +98,18 @@ export default function TransferOTP() {
         return;
       }
 
-      // Check if user has force_failure setting
+      // Check if user has force_failure setting - this overrides all other logic
       const { data: transferSetting, error: settingError } = await supabase
         .from('admin_transfer_settings')
         .select('force_success')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      const isFailureMode = !settingError && transferSetting && !transferSetting.force_success;
+      const isForceFailure = transferSetting && !transferSetting.force_success;
+      const isForceSuccess = transferSetting && transferSetting.force_success;
 
-      if (isFailureMode) {
+      if (isForceFailure) {
+        // Force Failure mode - ALWAYS go through verification flow and keep pending
         // For failure mode, create pending transaction
         const { error: pendingError } = await supabase
           .from('pending_transactions')
@@ -136,6 +138,7 @@ export default function TransferOTP() {
           } 
         });
       } else {
+        // No Force Failure setting OR Force Success is enabled - complete transfer immediately
         // For success mode, complete the transaction immediately
         await addTransaction({
           type: 'transfer',
