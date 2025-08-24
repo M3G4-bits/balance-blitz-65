@@ -79,79 +79,82 @@ export default function TransferTAC() {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/transfer/confirm")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground">Transfer Authorization</h1>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-md mx-auto">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="text-2xl font-bold text-blue-600">CPB</div>
+            <div className="text-xs text-gray-500">CREDIT POINT BANK</div>
+          </div>
+          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-4 h-4 bg-white rounded-full"></div>
+          </div>
         </div>
 
-        <Card className="bg-card/80 backdrop-blur-glass border-border shadow-glass">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <span>Enter TAC Code</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Please enter the Transfer Authorization Code (TAC) provided by your administrator
-              </p>
-              
-              <div className="flex justify-center">
-                <InputOTP
-                  maxLength={6}
+        {/* Currency ticker */}
+        <div className="bg-white border border-gray-200 px-2 py-1 mb-4 overflow-hidden">
+          <div className="flex space-x-4 text-xs text-gray-600 whitespace-nowrap animate-scroll">
+            <span className="text-red-500">• 191.16135 ▲</span>
+            <span>GBP/HKD = 10.03334 ▲</span>
+            <span>GBP/MXN = 26.16031 ▲</span>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-red-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-xl font-semibold text-gray-800 mb-2">
+              Transfer Authorization Code is required.
+            </h1>
+            <p className="text-sm text-red-500 mb-6">
+              Your account is restricted and inactive from carrying out transactions via our online banking channel. 
+              Kindly visit the nearest CPB branches to activate your account. For more information, contact your 
+              Account Officer for guidelines.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">
+                Enter Transfer Authorization Code:
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
                   value={tacCode}
-                  onChange={(value) => setTacCode(value)}
-                  inputMode="text"
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
+                  onChange={(e) => setTacCode(e.target.value.toUpperCase())}
+                  className="w-full p-3 border border-gray-300 rounded-md text-center text-lg font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter TAC"
+                  maxLength={6}
+                />
+                <div className="absolute right-3 top-3 text-gray-400 text-sm">TAC</div>
               </div>
             </div>
 
-            <div className="bg-secondary/50 p-4 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                Contact your administrator if you haven't received the TAC code for this transfer.
+            <div className="bg-gray-50 p-3 rounded-md">
+              <p className="text-xs text-gray-600">
+                We have security measures in place to safeguard your money, because we are 
+                committed to providing you with a secure banking experience.
               </p>
             </div>
 
-            <div className="flex space-x-3">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => navigate("/transfer/confirm")}
-              >
-                Back
-              </Button>
-              <Button 
-                onClick={handleSubmit} 
-                className="flex-1 bg-primary hover:bg-primary/90"
-                size="lg"
-                disabled={tacCode.length !== 6 || isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            <button
+              onClick={handleSubmit}
+              disabled={tacCode.length !== 6 || isLoading}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-md font-medium transition-colors"
+            >
+              {isLoading ? 'Verifying...' : 'Verify'}
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-gray-400">
+            © 2025 Credit point bank - All Rights Reserved.
+          </div>
+        </div>
       </div>
     </div>
   );

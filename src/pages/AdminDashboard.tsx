@@ -294,6 +294,17 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Validate balance amount (must be less than 10^10 with max 2 decimal places)
+    const balanceValue = parseFloat(newBalance);
+    if (balanceValue >= 10000000000 || balanceValue < 0) {
+      toast({
+        title: "Error",
+        description: "Balance must be between 0 and 9,999,999,999.99",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -301,7 +312,7 @@ const AdminDashboard = () => {
         .from('user_balances')
         .upsert({
           user_id: selectedUser.user_id,
-          balance: parseFloat(newBalance),
+          balance: Math.round(balanceValue * 100) / 100, // Ensure 2 decimal places
           updated_at: new Date().toISOString()
         });
 
