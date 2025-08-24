@@ -91,35 +91,57 @@ export default function TransferOTPVerify() {
         return;
       }
 
-      // Process successful transfer
-      const newBalance = balance - transferData.amount;
-      setBalance(newBalance);
-      
-      addTransaction({
-        type: 'transfer',
-        amount: transferData.amount,
-        description: `Transfer to ${transferData.recipient}`,
-        recipient: transferData.recipient,
-        bank_name: transferData.bankName,
-        status: 'completed',
-        date: new Date()
-      });
+      // Check if user is in force failure mode
+      const { data: transferSetting } = await supabase
+        .from('admin_transfer_settings')
+        .select('force_success')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      // Delete pending transaction
-      await supabase
-        .from('pending_transactions')
-        .delete()
-        .eq('id', pendingTransaction.id);
+      const isForceFailure = transferSetting && !transferSetting.force_success;
 
-      toast.success("Transfer completed successfully!");
-      navigate('/transfer-success', { 
-        state: { 
-          transferData: {
-            ...transferData,
-            status: 'completed'
-          }
-        } 
-      });
+      if (isForceFailure) {
+        // Keep transaction pending for admin approval
+        toast.success("Transfer submitted for approval!");
+        navigate('/transfer-success', { 
+          state: { 
+            transferData: {
+              ...transferData,
+              status: 'pending'
+            }
+          } 
+        });
+      } else {
+        // Process successful transfer immediately
+        const newBalance = balance - transferData.amount;
+        setBalance(newBalance);
+        
+        addTransaction({
+          type: 'transfer',
+          amount: transferData.amount,
+          description: `Transfer to ${transferData.recipient}`,
+          recipient: transferData.recipient,
+          bank_name: transferData.bankName,
+          status: 'completed',
+          date: new Date()
+        });
+
+        // Delete pending transaction
+        await supabase
+          .from('pending_transactions')
+          .delete()
+          .eq('id', pendingTransaction.id);
+
+        toast.success("Transfer completed successfully!");
+        navigate('/transfer-success', { 
+          state: { 
+            transferData: {
+              ...transferData,
+              status: 'completed'
+            }
+          } 
+        });
+      }
     } catch (error: any) {
       console.error("OTP verification error:", error);
       toast.error("Verification failed. Please try again.");

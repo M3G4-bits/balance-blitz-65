@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Download, Share } from "lucide-react";
+import { CheckCircle, Download, Share, Clock } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useBanking } from "@/contexts/BankingContext";
@@ -34,16 +34,20 @@ export default function TransferSuccess() {
       <div className="max-w-2xl mx-auto space-y-6">
           <div className="text-center space-y-4">
             <div className="flex justify-center">
-              <div className={`${transferData?.isPending ? 'bg-yellow-500/20' : 'bg-success-green/20'} p-4 rounded-full`}>
-                <CheckCircle className={`h-12 w-12 ${transferData?.isPending ? 'text-yellow-500' : 'text-success-green'}`} />
+              <div className={`${transferData?.status === 'pending' ? 'bg-amber-500/20' : 'bg-success-green/20'} p-4 rounded-full`}>
+                {transferData?.status === 'pending' ? (
+                  <Clock className="h-12 w-12 text-amber-500" />
+                ) : (
+                  <CheckCircle className="h-12 w-12 text-success-green" />
+                )}
               </div>
             </div>
             <h1 className="text-3xl font-bold text-foreground">
-              {transferData?.isPending ? 'Transfer Submitted!' : 'Transfer Successful!'}
+              {transferData?.status === 'pending' ? 'Transfer Pending Approval' : 'Transfer Successful!'}
             </h1>
             <p className="text-muted-foreground">
-              {transferData?.isPending 
-                ? 'Your transfer is pending admin approval and will be processed shortly.'
+              {transferData?.status === 'pending'
+                ? 'Your transfer is awaiting admin approval and will be processed once approved.'
                 : 'Your money has been sent successfully'
               }
             </p>
