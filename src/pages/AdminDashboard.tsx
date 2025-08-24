@@ -496,17 +496,19 @@ const AdminDashboard = () => {
 
     setIsCreatingUser(true);
     try {
-      const { error } = await supabase.auth.admin.createUser({
-        email: newUserData.email,
-        password: newUserData.password,
-        user_metadata: {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: newUserData.email,
+          password: newUserData.password,
           first_name: newUserData.firstName,
-          last_name: newUserData.lastName
-        },
-        email_confirm: true
+          last_name: newUserData.lastName,
+        }
       });
 
       if (error) throw error;
+      if (data && (data as any).error) {
+        throw new Error((data as any).error);
+      }
 
       toast({
         title: "Success",
