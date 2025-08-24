@@ -84,40 +84,19 @@ serve(async (req) => {
 
     const newUserId = created.user.id;
 
-    // Generate unique account number via RPC
-    const { data: acct, error: acctErr } = await admin.rpc("generate_account_number");
-    if (acctErr || !acct) {
-      console.error("Account number error:", acctErr);
-      return new Response(JSON.stringify({ error: "Failed to generate account number" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    // Wait a moment for trigger to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Insert profile
-    const { error: profileErr } = await admin.from("profiles").insert({
-      user_id: newUserId,
-      email,
-      first_name,
-      last_name,
-      account_number: acct as string,
-    });
-    if (profileErr) {
-      console.error("Insert profile error:", profileErr);
-      return new Response(JSON.stringify({ error: "Failed to create profile" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    // Get the created profile (created by trigger)
+    const { data: profile, error: profileErr } = await admin
+      .from("profiles")
+      .select("account_number")
+      .eq("user_id", newUserId)
+      .single();
 
-    // Initialize balance
-    const { error: balanceErr } = await admin.from("user_balances").insert({
-      user_id: newUserId,
-      balance: 0,
-    });
-    if (balanceErr) {
-      console.error("Insert balance error:", balanceErr);
-      return new Response(JSON.stringify({ error: "Failed to initialize balance" }), {
+    if (profileErr || !profile?.account_number) {
+      console.error("Profile fetch error:", profileErr);
+      return new Response(JSON.stringify({ error: "Failed to fetch created profile" }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
@@ -131,7 +110,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, user_id: newUserId, account_number: acct }),
+      JSON.stringify({ success: true, user_id: newUserId, account_number: profile.account_number }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (e: any) {
