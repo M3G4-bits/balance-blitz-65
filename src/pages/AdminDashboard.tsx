@@ -201,23 +201,43 @@ const AdminDashboard = () => {
 
   const fetchPendingTransactions = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get pending transactions
+      const { data: pendingTxns, error: txnError } = await supabase
         .from('pending_transactions')
-        .select(`
-          *,
-          profiles:user_id (
-            first_name,
-            last_name,
-            email,
-            account_number
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPendingTransactions(data || []);
+      if (txnError) throw txnError;
+
+      if (!pendingTxns || pendingTxns.length === 0) {
+        setPendingTransactions([]);
+        return;
+      }
+
+      // Then get profile data for each user
+      const userIds = pendingTxns.map(txn => txn.user_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, email, account_number')
+        .in('user_id', userIds);
+
+      if (profileError) throw profileError;
+
+      // Combine the data
+      const transactionsWithProfiles = pendingTxns.map(txn => ({
+        ...txn,
+        profiles: profiles?.find(p => p.user_id === txn.user_id) || {
+          first_name: 'Unknown',
+          last_name: 'User',
+          email: 'unknown@example.com',
+          account_number: 'N/A'
+        }
+      }));
+
+      setPendingTransactions(transactionsWithProfiles);
     } catch (error) {
       console.error('Error fetching pending transactions:', error);
+      setPendingTransactions([]);
     }
   };
 
