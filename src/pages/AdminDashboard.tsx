@@ -423,8 +423,8 @@ const AdminDashboard = () => {
       
       console.log(`Toggling transfer setting for user ${userId}: ${currentSetting} -> ${newSetting}`);
 
-      // Use upsert for better reliability
-      const { error } = await supabase
+      // Use upsert for better reliability and wait for completion
+      const { data, error } = await supabase
         .from('admin_transfer_settings')
         .upsert({
           user_id: userId,
@@ -433,17 +433,21 @@ const AdminDashboard = () => {
         }, {
           onConflict: 'user_id',
           ignoreDuplicates: false
-        });
+        })
+        .select();
 
       if (error) throw error;
 
-      // Update local state
+      // Wait a moment to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Update local state only after successful database operation
       setTransferSettings(prev => ({
         ...prev,
         [userId]: newSetting
       }));
       
-      console.log(`Successfully updated transfer setting for user ${userId} to ${newSetting}`);
+      console.log(`Successfully updated transfer setting for user ${userId} to ${newSetting}`, data);
 
       if (!newSetting) {
         // Fetch user's static codes from profile for failure mode

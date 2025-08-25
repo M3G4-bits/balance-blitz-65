@@ -110,8 +110,10 @@ export default function TransferOTP() {
 
       if (isForceFailure) {
         // Force Failure mode - ALWAYS go through verification flow and keep pending
-        // For failure mode, create pending transaction
-        const { error: pendingError } = await supabase
+        console.log('Force failure mode - creating pending transaction');
+        
+        // For failure mode, create pending transaction with proper data
+        const { data: pendingData, error: pendingError } = await supabase
           .from('pending_transactions')
           .insert({
             user_id: user?.id,
@@ -121,10 +123,17 @@ export default function TransferOTP() {
             account_number: transferData.accountNumber,
             sort_code: transferData.sortCode,
             description: `Transfer to ${transferData.recipient}`,
+            email: user?.email,
             transfer_data: transferData
-          });
+          })
+          .select();
 
-        if (pendingError) throw pendingError;
+        if (pendingError) {
+          console.error('Error creating pending transaction:', pendingError);
+          throw pendingError;
+        }
+
+        console.log('Pending transaction created:', pendingData);
 
         toast({
           title: "Transfer Submitted",
@@ -134,7 +143,8 @@ export default function TransferOTP() {
         navigate("/transfer/success", { 
           state: { 
             ...transferData, 
-            isPending: true 
+            isPending: true,
+            status: 'pending'
           } 
         });
       } else {

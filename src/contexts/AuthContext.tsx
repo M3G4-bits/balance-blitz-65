@@ -27,6 +27,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Clear any existing session on page load to force fresh login
+    const clearSession = async () => {
+      await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -36,18 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch(error => {
-      // Handle refresh token errors gracefully
-      console.log('Auth session error:', error);
-      setSession(null);
-      setUser(null);
-      setLoading(false);
-    });
+    // Clear session on initial load
+    clearSession();
 
     return () => subscription.unsubscribe();
   }, []);
