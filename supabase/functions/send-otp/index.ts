@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
 const corsHeaders = {
@@ -25,7 +25,26 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate environment variables
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!resendKey) {
+      console.error('RESEND_API_KEY not found');
+      throw new Error('Email service not configured');
+    }
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase credentials not found');
+      throw new Error('Database service not configured');
+    }
+
     const { email, transferData }: OTPRequest = await req.json();
+
+    if (!email || !transferData) {
+      throw new Error('Missing required parameters: email and transferData');
+    }
 
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -40,10 +59,17 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('email', email)
       .single();
 
-    if (profileError || !profiles) {
+    if (profileError) {
       console.error('Error finding user profile:', profileError);
+      throw new Error(`Database error: ${profileError.message}`);
+    }
+
+    if (!profiles) {
+      console.error('User profile not found for email:', email);
       throw new Error('User not found');
     }
+
+    console.log('Found user profile:', profiles.user_id);
 
     // Store OTP in database
     const { error: updateError } = await supabase
@@ -53,8 +79,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (updateError) {
       console.error('Error storing OTP:', updateError);
-      throw new Error('Failed to store OTP');
+      throw new Error(`Failed to store OTP: ${updateError.message}`);
     }
+
+    console.log('OTP stored successfully in database');
 
     // Send OTP email using Resend
     const emailResponse = await resend.emails.send({
