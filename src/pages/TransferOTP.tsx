@@ -19,6 +19,8 @@ export default function TransferOTP() {
   const [otpCode, setOtpCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes in seconds
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -30,6 +32,26 @@ export default function TransferOTP() {
       sendOTPEmail();
     }
   }, [user, transferData, navigate]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setIsExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   if (!transferData) {
     return null;
@@ -63,6 +85,8 @@ export default function TransferOTP() {
   const handleResendOTP = async () => {
     setIsResending(true);
     await sendOTPEmail();
+    setTimeLeft(180); // Reset timer to 3 minutes
+    setIsExpired(false);
     setIsResending(false);
   };
 
@@ -241,9 +265,18 @@ export default function TransferOTP() {
               </Button>
             </div>
 
+            <div className="text-center space-y-2">
+              <div className={`text-lg font-semibold ${isExpired ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {isExpired ? 'Code Expired' : formatTime(timeLeft)}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {isExpired ? 'Click "Resend OTP" to get a new code' : 'Time remaining'}
+              </p>
+            </div>
+
             <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
               <p className="text-sm text-green-700 dark:text-green-400">
-                This code expires in 10 minutes. Check your spam folder if you don't see the email.
+                Check your spam folder if you don't see the email.
               </p>
             </div>
 
