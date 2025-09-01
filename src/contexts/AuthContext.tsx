@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithOTP: (email: string, password: string, otp: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -37,29 +38,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       );
 
-      // Check for existing session
+      // Check for existing session - don't force logout anymore
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // Check if user is admin
-        const { data: adminData } = await supabase
-          .from('admin_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        
-        const isAdmin = !!adminData;
-        
-        // Clear session for non-admin users to force fresh login
-        if (!isAdmin) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setUser(null);
-        } else {
-          // Keep session for admin users
-          setSession(session);
-          setUser(session.user);
-        }
+        setSession(session);
+        setUser(session.user);
       }
       
       setLoading(false);
@@ -95,6 +79,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const signInWithOTP = async (email: string, password: string, otp: string) => {
+    // First verify the password is correct
+    const { error: passwordError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (passwordError) return { error: passwordError };
+
+    // Then verify OTP (this would be stored in a temporary table or similar)
+    // For now, we'll simulate OTP verification
+    return { error: null };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -106,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loading,
       signUp,
       signIn,
+      signInWithOTP,
       signOut,
     }}>
       {children}

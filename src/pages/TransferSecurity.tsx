@@ -105,7 +105,11 @@ export default function TransferSecurity() {
                 <InputOTP
                   maxLength={6}
                   value={securityCode}
-                  onChange={(value) => setSecurityCode(value)}
+                  onChange={(value) => {
+                    // Only allow numbers
+                    const numericValue = value.replace(/\D/g, '');
+                    setSecurityCode(numericValue);
+                  }}
                 >
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
