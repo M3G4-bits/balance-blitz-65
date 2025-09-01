@@ -1,3 +1,122 @@
+// import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+// import { User, Session } from '@supabase/supabase-js';
+// import { supabase } from '@/integrations/supabase/client';
+
+// interface AuthContextType {
+//   user: User | null;
+//   session: Session | null;
+//   loading: boolean;
+//   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: any }>;
+//   signIn: (email: string, password: string) => Promise<{ error: any }>;
+//   signOut: () => Promise<void>;
+// }
+
+// const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// export const useAuth = () => {
+//   const context = useContext(AuthContext);
+//   if (!context) {
+//     throw new Error('useAuth must be used within an AuthProvider');
+//   }
+//   return context;
+// };
+
+// export const AuthProvider = ({ children }: { children: ReactNode }) => {
+//   const [user, setUser] = useState<User | null>(null);
+//   const [session, setSession] = useState<Session | null>(null);
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     const initializeAuth = async () => {
+//       // Set up auth state listener
+//       const { data: { subscription } } = supabase.auth.onAuthStateChange(
+//         (event, session) => {
+//           setSession(session);
+//           setUser(session?.user ?? null);
+//           setLoading(false);
+//         }
+//       );
+
+//       // Check for existing session
+//       const { data: { session } } = await supabase.auth.getSession();
+      
+//       if (session?.user) {
+//         // Check if user is admin
+//         const { data: adminData } = await supabase
+//           .from('admin_roles')
+//           .select('role')
+//           .eq('user_id', session.user.id)
+//           .maybeSingle();
+        
+//         const isAdmin = !!adminData;
+        
+//         // Clear session for non-admin users to force fresh login
+//         if (!isAdmin) {
+//           await supabase.auth.signOut();
+//           setSession(null);
+//           setUser(null);
+//         } else {
+//           // Keep session for admin users
+//           setSession(session);
+//           setUser(session.user);
+//         }
+//       }
+      
+//       setLoading(false);
+
+//       return () => subscription.unsubscribe();
+//     };
+
+//     initializeAuth();
+//   }, []);
+
+//   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+//     const redirectUrl = `${window.location.origin}/`;
+    
+//     const { error } = await supabase.auth.signUp({
+//       email,
+//       password,
+//       options: {
+//         emailRedirectTo: redirectUrl,
+//         data: {
+//           first_name: firstName,
+//           last_name: lastName,
+//         }
+//       }
+//     });
+//     return { error };
+//   };
+
+//   const signIn = async (email: string, password: string) => {
+//     const { error } = await supabase.auth.signInWithPassword({
+//       email,
+//       password,
+//     });
+//     return { error };
+//   };
+
+//   const signOut = async () => {
+//     await supabase.auth.signOut();
+//   };
+
+//   return (
+//     <AuthContext.Provider value={{
+//       user,
+//       session,
+//       loading,
+//       signUp,
+//       signIn,
+//       signOut,
+//     }}>
+//       {children}
+//     </AuthContext.Provider>
+//   );
+// };
+
+
+
+
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +144,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
+
+  // Activity tracking
+  useEffect(() => {
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    // Add event listeners for activity tracking
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+
+    // Clean up event listeners
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+    };
+  }, []);
+
+  // Inactivity timer (7 minutes)
+  useEffect(() => {
+    if (!user) return;
+
+    const checkInactivity = setInterval(() => {
+      const inactiveTime = Date.now() - lastActivity;
+      const sevenMinutes = 7 * 60 * 1000; // 7 minutes in milliseconds
+
+      if (inactiveTime >= sevenMinutes) {
+        signOut();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(checkInactivity);
+  }, [user, lastActivity]);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -37,29 +194,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       );
 
-      // Check for existing session
+      // Check for existing session on app load
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // Check if user is admin
-        const { data: adminData } = await supabase
-          .from('admin_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        
-        const isAdmin = !!adminData;
-        
-        // Clear session for non-admin users to force fresh login
-        if (!isAdmin) {
-          await supabase.auth.signOut();
-          setSession(null);
-          setUser(null);
-        } else {
-          // Keep session for admin users
-          setSession(session);
-          setUser(session.user);
-        }
+        setSession(session);
+        setUser(session.user);
       }
       
       setLoading(false);
