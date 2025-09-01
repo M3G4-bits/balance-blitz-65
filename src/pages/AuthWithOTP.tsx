@@ -18,6 +18,9 @@ const AuthWithOTP = () => {
   const [currentEmail, setCurrentEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   
+  const [isDevFallback, setIsDevFallback] = useState(false);
+  const [lastSentOtp, setLastSentOtp] = useState("");
+  
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ 
     email: '', 
@@ -40,14 +43,19 @@ const AuthWithOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
-  const sendOTPEmail = async (email: string, otp: string) => {
+  const sendOTPEmail = async (email: string, otp: string): Promise<{ success: boolean; dev: boolean; otp?: string; message?: string; }> => {
     try {
-      const { error } = await supabase.functions.invoke('send-login-otp', {
+      const { data, error } = await supabase.functions.invoke('send-login-otp', {
         body: { email, otp }
       });
-      
       if (error) throw error;
-      return true;
+
+      // data may be { delivered: true } or { delivered: false, reason, message, otp }
+      const delivered = (data as any)?.delivered === true;
+      if (!delivered) {
+        return { success: true, dev: true, otp: (data as any)?.otp, message: (data as any)?.message };
+      }
+      return { success: true, dev: false };
     } catch (error: any) {
       console.error('Error sending OTP:', error);
       toast({
@@ -55,7 +63,7 @@ const AuthWithOTP = () => {
         description: "Failed to send OTP email",
         variant: "destructive",
       });
-      return false;
+      return { success: false, dev: false, message: error?.message };
     }
   };
 
@@ -65,18 +73,23 @@ const AuthWithOTP = () => {
     
     // Generate and send OTP
     const otp = generateOTP();
-    const otpSent = await sendOTPEmail(loginData.email, otp);
+    const result = await sendOTPEmail(loginData.email, otp);
     
-    if (otpSent) {
+    if (result.success) {
+      const codeToUse = result.otp ?? otp;
       // Store OTP temporarily (in real app, this would be server-side)
-      sessionStorage.setItem('login_otp', otp);
+      sessionStorage.setItem('login_otp', codeToUse);
       sessionStorage.setItem('login_otp_expires', (Date.now() + 3 * 60 * 1000).toString());
       setCurrentEmail(loginData.email);
       setCurrentPassword(loginData.password);
+      setIsDevFallback(result.dev);
+      setLastSentOtp(codeToUse);
       setShowOTP(true);
       toast({
-        title: "OTP Sent",
-        description: "Please check your email for the verification code",
+        title: result.dev ? "OTP Ready (Dev Fallback)" : "OTP Sent",
+        description: result.dev
+          ? "Email delivery is blocked by Resend. Use the code shown on-screen to proceed."
+          : "Please check your email for the verification code",
       });
     }
     
@@ -176,15 +189,20 @@ const AuthWithOTP = () => {
 
   const handleResendOTP = async () => {
     const otp = generateOTP();
-    const otpSent = await sendOTPEmail(currentEmail, otp);
+    const result = await sendOTPEmail(currentEmail, otp);
     
-    if (otpSent) {
-      sessionStorage.setItem('login_otp', otp);
+    if (result.success) {
+      const codeToUse = result.otp ?? otp;
+      sessionStorage.setItem('login_otp', codeToUse);
       sessionStorage.setItem('login_otp_expires', (Date.now() + 3 * 60 * 1000).toString());
       setOtpCode("");
+      setIsDevFallback(result.dev);
+      setLastSentOtp(codeToUse);
       toast({
-        title: "New OTP Sent",
-        description: "Please check your email for the new verification code",
+        title: result.dev ? "New OTP Ready (Dev Fallback)" : "New OTP Sent",
+        description: result.dev
+          ? "Email delivery is blocked by Resend. Use the code shown on-screen to proceed."
+          : "Please check your email for the new verification code",
       });
     }
   };
@@ -216,6 +234,11 @@ const AuthWithOTP = () => {
                 </InputOTPGroup>
               </InputOTP>
             </div>
+            {isDevFallback && lastSentOtp && (
+              <p className="text-sm text-muted-foreground text-center">
+                Dev mode: your code is <span className="font-semibold">{lastSentOtp}</span>
+              </p>
+            )}
             
             <Button 
               onClick={handleOTPVerification}

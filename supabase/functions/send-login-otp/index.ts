@@ -56,9 +56,25 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Login OTP email sent successfully:", emailResponse);
+    console.log("Login OTP email sent attempt:", emailResponse);
 
-    return new Response(JSON.stringify(emailResponse), {
+    // If Resend blocks sending due to unverified domain, provide a dev fallback response
+    if ((emailResponse as any)?.error) {
+      const reason = (emailResponse as any).error?.error || "Email sending failed";
+      console.log("Resend delivery issue, enabling dev fallback:", reason);
+      return new Response(
+        JSON.stringify({ delivered: false, reason: "resend_domain_not_verified", message: reason, otp }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    }
+
+    return new Response(JSON.stringify({ delivered: true }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
