@@ -16,6 +16,7 @@ interface TransferData {
   bankName: string;
   sortCode: string;
   description?: string;
+  tinNumber?: string;
 }
 
 export default function TransferOTP() {
@@ -58,8 +59,6 @@ export default function TransferOTP() {
         description: `Transfer to ${transferData.recipient}`,
         email: user?.email,
         transfer_data: { ...transferData, otp: generatedOtp, expires_at: expiresAt },
-        otp_code: generatedOtp,
-        otp_expires_at: expiresAt,
       };
 
       const { error: insertError } = await supabase
@@ -101,8 +100,6 @@ export default function TransferOTP() {
 
       const updateData = {
         transfer_data: { ...transferData, otp: newOtp, expires_at: newExpiresAt },
-        otp_code: newOtp,
-        otp_expires_at: newExpiresAt,
       };
 
       const { error } = await supabase
@@ -158,14 +155,20 @@ export default function TransferOTP() {
       // Query pending transactions
       const { data: pendingTransactions, error: txError } = await supabase
         .from('pending_transactions')
-        .select('*')
+        .select('id, user_id, amount, recipient, bank_name, account_number, sort_code, transfer_data')
         .eq('user_id', user?.id)
-        .eq('otp_code', otpCode)
-        .gte('otp_expires_at', currentTime);
+        .eq('recipient', transferData.recipient)
+        .eq('amount', transferData.amount);
 
       if (txError) throw txError;
       
-      const pendingTransaction = pendingTransactions?.[0];
+      // Find the transaction with matching OTP and check expiry
+      const pendingTransaction = pendingTransactions?.find((tx: any) => {
+        const transferDataJson = tx.transfer_data as any;
+        return transferDataJson?.otp === otpCode && 
+               new Date(transferDataJson?.expires_at) > new Date(currentTime);
+      });
+      
       if (!pendingTransaction) {
         throw new Error("Invalid or expired OTP");
       }
