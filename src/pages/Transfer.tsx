@@ -8,10 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowUpRight, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Transfer() {
-  const [transferAmount, setTransferAmount] = useState("");
   const [transferRecipient, setTransferRecipient] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [bankName, setBankName] = useState("");
@@ -22,16 +21,38 @@ export default function Transfer() {
   const { balance, formatCurrency } = useBanking();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const transferAmount = location.state?.amount || 0;
 
   useEffect(() => {
     if (!user) {
       navigate('/auth');
     }
-  }, [user, navigate]);
+    if (!transferAmount || transferAmount <= 0) {
+      navigate('/transfer/start');
+    }
+  }, [user, navigate, transferAmount]);
+
+  const formatSortCode = (value: string) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/[^0-9]/g, '');
+    
+    // Limit to 6 digits
+    const limited = numericValue.slice(0, 6);
+    
+    // Add hyphens after every 2 digits
+    const formatted = limited.replace(/(\d{2})(?=\d)/g, '$1-');
+    
+    return formatted;
+  };
+
+  const handleSortCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatSortCode(e.target.value);
+    setSortCode(formatted);
+  };
 
   const handleTransfer = async () => {
-    const amount = parseFloat(transferAmount);
-    if (!amount || amount <= 0 || !transferRecipient || !accountNumber || !bankName || !sortCode) {
+    if (!transferRecipient || !accountNumber || !bankName || !sortCode) {
       toast({
         title: "Invalid Transfer",
         description: "Please fill in all required fields.",
@@ -50,11 +71,12 @@ export default function Transfer() {
       return;
     }
 
-    // Check if user has sufficient balance
-    if (amount > balance) {
+    // Validate sort code (6 digits)
+    const sortCodeDigits = sortCode.replace(/[^0-9]/g, '');
+    if (sortCodeDigits.length !== 6) {
       toast({
-        title: "Insufficient Balance",
-        description: `You only have ${formatCurrency(balance)} available.`,
+        title: "Invalid Sort Code",
+        description: "Sort code must be exactly 6 digits.",
         variant: "destructive"
       });
       return;
@@ -68,7 +90,7 @@ export default function Transfer() {
     // Navigate to confirmation page with transfer data
     navigate("/transfer/confirm", {
       state: {
-        amount,
+        amount: transferAmount,
         recipient: transferRecipient,
         accountNumber,
         bankName,
@@ -136,23 +158,18 @@ export default function Transfer() {
               <Label htmlFor="sortCode">Sort Code</Label>
               <Input
                 id="sortCode"
-                placeholder="Enter sort code"
+                placeholder="12-34-56"
                 value={sortCode}
-                onChange={(e) => setSortCode(e.target.value)}
+                onChange={handleSortCodeChange}
                 className="mt-2"
+                maxLength={8}
               />
             </div>
 
-            <div>
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="0.00"
-                value={transferAmount}
-                onChange={(e) => setTransferAmount(e.target.value)}
-                className="mt-2"
-              />
+            <div className="bg-muted/30 p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                Transfer Amount: {formatCurrency(transferAmount)}
+              </p>
             </div>
 
             <div>

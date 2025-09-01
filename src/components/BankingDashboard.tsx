@@ -957,7 +957,7 @@ export const BankingDashboard = () => {
     setIsLoadingTransfer(true);
     setTimeout(() => {
       setIsLoadingTransfer(false);
-      navigate("/transfer");
+      navigate("/transfer/start");
     }, 1000); // 1-second delay
   };
 
@@ -1157,7 +1157,7 @@ export const BankingDashboard = () => {
 
                 <Card 
                   className="bg-card/80 backdrop-blur-glass border-border shadow-glass cursor-pointer hover:bg-card/90 transition-all min-w-[100px] md:min-w-[120px] snap-start rounded-xl"
-                  onClick={() => navigate("/transfer")}
+                  onClick={() => navigate("/transfer/start")}
                 >
                   <CardContent className="p-2 md:p-3 text-center">
                     <ArrowLeftRight className="h-4 w-4 md:h-5 md:w-5 mx-auto mb-1 md:mb-2 text-accent" />

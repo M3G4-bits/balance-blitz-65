@@ -7,6 +7,7 @@ import { BankingProvider } from "./contexts/BankingContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import TransferStart from "./pages/TransferStart";
 import Transfer from "./pages/Transfer";
 import TransferConfirm from "./pages/TransferConfirm";
 import TransferSuccess from "./pages/TransferSuccess";
@@ -45,9 +46,10 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/my-account" element={<MyAccount />} />
-           <Route path="/transfer" element={<Transfer />} />
+               <Route path="/auth" element={<Auth />} />
+               <Route path="/my-account" element={<MyAccount />} />
+            <Route path="/transfer/start" element={<TransferStart />} />
+            <Route path="/transfer" element={<Transfer />} />
           <Route path="/transfer/confirm" element={<TransferConfirm />} />
           <Route path="/transfer/tac" element={<TransferTAC />} />
           <Route path="/transfer/security" element={<TransferSecurity />} />
