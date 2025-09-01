@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -17,8 +17,16 @@ export default function TransferOTPVerify() {
   const [otp, setOtp] = useState("");
   const [timeLeft, setTimeLeft] = useState(180); // 3 minutes in seconds
   const [isExpired, setIsExpired] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const transferData = location.state?.transferData;
+
+  // Generate and send OTP on component mount
+  useEffect(() => {
+    if (user && transferData) {
+      sendOTPEmail();
+    }
+  }, [user, transferData]);
 
   useEffect(() => {
     if (!user) {
@@ -52,10 +60,66 @@ export default function TransferOTPVerify() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const sendOTPEmail = async () => {
+    if (!user || !transferData) return;
+
+    try {
+      setIsLoading(true);
+      
+      // Generate OTP
+      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString();
+
+      // Create pending transaction
+      const pendingData = {
+        user_id: user.id,
+        amount: transferData.amount,
+        recipient: transferData.recipient,
+        bank_name: transferData.bankName,
+        account_number: transferData.accountNumber,
+        sort_code: transferData.sortCode,
+        description: `Transfer to ${transferData.recipient}`,
+        email: user.email,
+        transfer_data: { 
+          ...transferData, 
+          otp: generatedOtp, 
+          expires_at: expiresAt 
+        },
+      };
+
+      const { error: insertError } = await supabase
+        .from('pending_transactions')
+        .insert(pendingData);
+
+      if (insertError) throw insertError;
+
+      // Send OTP email
+      const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
+        body: { 
+          email: user.email,
+          otp: generatedOtp,
+          transferData: transferData 
+        }
+      });
+
+      if (emailError) throw emailError;
+
+      toast.success("OTP sent to your email");
+    } catch (error: any) {
+      console.error('Error sending OTP:', error);
+      toast.error("Failed to send OTP. Please try again.");
+      navigate("/transfer");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleVerifyOTP = async () => {
     if (!user || !transferData || otp.length !== 6) return;
 
     try {
+      setIsLoading(true);
+      
       // Get pending transaction with OTP
       const { data: pendingTransactions, error: fetchError } = await supabase
         .from('pending_transactions')
@@ -91,8 +155,7 @@ export default function TransferOTPVerify() {
         return;
       }
 
-      // Check if user is in force failure mode - this overrides all other logic
-      // When Force Failure is enabled, ALWAYS keep transactions pending until admin approval
+      // Check if user is in force failure mode
       const { data: transferSetting } = await supabase
         .from('admin_transfer_settings')
         .select('force_success')
@@ -102,8 +165,7 @@ export default function TransferOTPVerify() {
       const isForceFailure = transferSetting && !transferSetting.force_success;
 
       if (isForceFailure) {
-        // Force Failure mode enabled - transaction remains pending until admin manually approves
-        // This overrides any alternating success/failure patterns
+        // Force Failure mode - transaction remains pending
         toast.success("Transfer submitted for approval!");
         navigate('/transfer-success', { 
           state: { 
@@ -114,10 +176,11 @@ export default function TransferOTPVerify() {
           } 
         });
       } else {
-        // No Force Failure setting OR Force Success is enabled - complete transfer immediately
+        // Success mode - complete transfer immediately
         const newBalance = balance - transferData.amount;
         setBalance(newBalance);
         
+        // Add transaction to local state
         addTransaction({
           type: 'transfer',
           amount: -transferData.amount,
@@ -127,6 +190,27 @@ export default function TransferOTPVerify() {
           status: 'completed',
           date: new Date()
         });
+
+        // Update database balance
+        await supabase
+          .from('user_balances')
+          .update({ balance: newBalance })
+          .eq('user_id', user.id);
+
+        // Add transaction to database
+        await supabase
+          .from('transactions')
+          .insert({
+            user_id: user.id,
+            type: 'transfer',
+            amount: -transferData.amount,
+            description: `Transfer to ${transferData.recipient}`,
+            recipient: transferData.recipient,
+            bank_name: transferData.bankName,
+            account_number: transferData.accountNumber,
+            sort_code: transferData.sortCode,
+            status: 'completed'
+          });
 
         // Delete pending transaction
         await supabase
@@ -147,6 +231,8 @@ export default function TransferOTPVerify() {
     } catch (error: any) {
       console.error("OTP verification error:", error);
       toast.error("Verification failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -154,24 +240,16 @@ export default function TransferOTPVerify() {
     if (!user || !transferData) return;
 
     try {
-      // Get user profile for email
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.email) {
-        throw new Error("User email not found");
-      }
-
+      setIsLoading(true);
+      
       // Generate new OTP
       const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      const newExpiryTime = new Date(Date.now() + 3 * 60 * 1000);
       
       // Send OTP email
       const { error: emailError } = await supabase.functions.invoke('send-otp-email', {
         body: {
-          email: profile.email,
+          email: user.email,
           otp: newOtp,
           transferData: transferData
         }
@@ -183,8 +261,6 @@ export default function TransferOTPVerify() {
       }
 
       // Update pending transaction with new OTP and expiry
-      const newExpiryTime = new Date(Date.now() + 3 * 60 * 1000);
-      
       const { error } = await supabase
         .from('pending_transactions')
         .update({
@@ -203,6 +279,8 @@ export default function TransferOTPVerify() {
     } catch (error: any) {
       console.error("Resend OTP error:", error);
       toast.error("Failed to resend OTP");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -260,10 +338,17 @@ export default function TransferOTPVerify() {
 
               <Button 
                 onClick={handleVerifyOTP}
-                disabled={otp.length !== 6 || isExpired}
+                disabled={otp.length !== 6 || isExpired || isLoading}
                 className="w-full"
               >
-                Verify & Complete Transfer
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify & Complete Transfer'
+                )}
               </Button>
 
               {isExpired && (
