@@ -68,6 +68,8 @@ export type Database = {
           description: string
           email: string | null
           id: string
+          otp_code: string | null
+          otp_expires_at: string | null
           recipient: string
           sort_code: string | null
           transfer_data: Json
@@ -82,6 +84,8 @@ export type Database = {
           description: string
           email?: string | null
           id?: string
+          otp_code?: string | null
+          otp_expires_at?: string | null
           recipient: string
           sort_code?: string | null
           transfer_data: Json
@@ -96,6 +100,8 @@ export type Database = {
           description?: string
           email?: string | null
           id?: string
+          otp_code?: string | null
+          otp_expires_at?: string | null
           recipient?: string
           sort_code?: string | null
           transfer_data?: Json
