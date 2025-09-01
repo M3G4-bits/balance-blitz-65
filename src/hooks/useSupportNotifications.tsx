@@ -32,7 +32,7 @@ export const useSupportNotifications = () => {
           .select('*', { count: 'exact', head: true })
           .in('conversation_id', conversationIds)
           .eq('sender_type', 'admin')
-          .eq('is_read', false);
+          .is('is_read', false);
 
         setUnreadCount(count || 0);
         setHasUnreadMessages((count || 0) > 0);
@@ -71,12 +71,17 @@ export const useSupportNotifications = () => {
     if (!user) return;
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('support_messages')
-        .update({ is_read: true })
+        .update({ is_read: true } as any)
         .eq('conversation_id', conversationId)
         .eq('sender_type', 'admin')
         .eq('is_read', false);
+
+      if (error) {
+        console.error('Error marking messages as read:', error);
+        return;
+      }
 
       setHasUnreadMessages(false);
       setUnreadCount(0);

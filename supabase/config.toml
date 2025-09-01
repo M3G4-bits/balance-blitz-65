@@ -1,1 +1,7 @@
 project_id = "hpgufcjmpycafrgetrqw"
+
+[functions.send-login-otp]
+verify_jwt = false
+
+[functions.send-otp-email] 
+verify_jwt = false

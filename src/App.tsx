@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BankingProvider } from "./contexts/BankingContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { InactivityTracker } from "./components/InactivityTracker";
+import CustomerSupportChatEnhanced from "./components/CustomerSupportChatEnhanced";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TransferStart from "./pages/TransferStart";
@@ -26,6 +28,7 @@ import PayBills from "./pages/PayBills";
 import Settings from "./pages/Settings";
 import KYCStatus from "./pages/KYCStatus";
 import VirtualCards from "./pages/VirtualCards";
+import AuthWithOTP from "./pages/AuthWithOTP";
 import Auth from "./pages/Auth";
 import MyAccount from "./pages/MyAccount";
 import History from "./pages/History";
@@ -41,12 +44,13 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <BankingProvider>
+          <InactivityTracker />
           <Toaster />
           <Sonner />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-               <Route path="/auth" element={<Auth />} />
+               <Route path="/auth" element={<AuthWithOTP />} />
                <Route path="/my-account" element={<MyAccount />} />
             <Route path="/transfer/start" element={<TransferStart />} />
             <Route path="/transfer" element={<Transfer />} />
@@ -75,6 +79,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <CustomerSupportChatEnhanced />
           </BrowserRouter>
         </BankingProvider>
       </AuthProvider>

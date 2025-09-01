@@ -9,6 +9,7 @@ import { useBanking } from "@/contexts/BankingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ArrowLeft, ArrowUpRight, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import AnimatedTicker from "@/components/AnimatedTicker";
 
 export default function Transfer() {
   const [transferRecipient, setTransferRecipient] = useState("");
@@ -103,7 +104,9 @@ export default function Transfer() {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-banking-gradient p-4 md:p-6">
+    <div className="min-h-screen bg-background bg-banking-gradient">
+      <AnimatedTicker />
+      <div className="p-4 md:p-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
@@ -199,6 +202,7 @@ export default function Transfer() {
             </Button>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
