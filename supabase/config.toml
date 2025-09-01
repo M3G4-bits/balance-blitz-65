@@ -1,8 +1,4 @@
-# project_id = "hpgufcjmpycafrgetrqw"
-
-# [functions.send-otp]
-# verify_jwt = false
 project_id = "hpgufcjmpycafrgetrqw"
 
-[functions.send-login-otp]
+[functions.send-otp]
 verify_jwt = false
