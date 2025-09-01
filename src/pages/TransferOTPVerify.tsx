@@ -120,7 +120,7 @@ export default function TransferOTPVerify() {
         
         addTransaction({
           type: 'transfer',
-          amount: transferData.amount,
+          amount: -transferData.amount,
           description: `Transfer to ${transferData.recipient}`,
           recipient: transferData.recipient,
           bank_name: transferData.bankName,

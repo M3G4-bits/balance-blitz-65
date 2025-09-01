@@ -29,6 +29,8 @@ export default function TransferOTP() {
   const [otpCode, setOtpCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(180); // 3 minutes in seconds
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -39,6 +41,27 @@ export default function TransferOTP() {
       sendOTPEmail();
     }
   }, [user, transferData, navigate]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setIsExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   if (!transferData) {
     return null;
@@ -120,6 +143,11 @@ export default function TransferOTP() {
       });
 
       if (emailError) throw emailError;
+
+      // Reset timer
+      setTimeLeft(180);
+      setIsExpired(false);
+      setOtpCode("");
 
       toast({
         title: "OTP Resent",
@@ -300,6 +328,13 @@ export default function TransferOTP() {
                 <span className="font-medium">{user?.email}</span>
               </p>
               
+              <div className="text-center">
+                <div className={`text-lg font-semibold ${isExpired ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {isExpired ? 'Expired' : formatTime(timeLeft)}
+                </div>
+                <p className="text-sm text-muted-foreground">Time remaining</p>
+              </div>
+              
               <div className="flex justify-center">
                 <InputOTP
                   maxLength={6}
@@ -317,21 +352,23 @@ export default function TransferOTP() {
                 </InputOTP>
               </div>
 
-              <Button 
-                variant="ghost" 
-                onClick={handleResendOTP}
-                disabled={isResending}
-                className="text-primary"
-              >
-                {isResending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Resending...
-                  </>
-                ) : (
-                  'Resend OTP'
-                )}
-              </Button>
+              {isExpired && (
+                <Button 
+                  variant="ghost" 
+                  onClick={handleResendOTP}
+                  disabled={isResending}
+                  className="text-primary"
+                >
+                  {isResending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Resending...
+                    </>
+                  ) : (
+                    'Resend OTP'
+                  )}
+                </Button>
+              )}
             </div>
 
             <div className="bg-green-500/10 p-4 rounded-lg border border-green-500/20">
@@ -352,7 +389,7 @@ export default function TransferOTP() {
                 onClick={handleSubmit} 
                 className="flex-1 bg-primary hover:bg-primary/90"
                 size="lg"
-                disabled={otpCode.length !== 6 || isLoading}
+                disabled={otpCode.length !== 6 || isLoading || isExpired}
               >
                 {isLoading ? (
                   <>

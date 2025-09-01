@@ -839,6 +839,7 @@ import CustomerSupportChat from "@/components/CustomerSupportChat";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { usePresence } from "@/hooks/usePresence";
+import { FinancialChart } from "@/components/FinancialChart";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -1294,6 +1295,8 @@ export const BankingDashboard = () => {
                 </Card>
               </div>
             )}
+            {/* Financial Chart */}
+            <FinancialChart />
           </div>
         </div>
       </div>
