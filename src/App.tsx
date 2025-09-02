@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { InactivityTracker } from "./components/InactivityTracker";
 import GlobalCustomerSupport from "./components/GlobalCustomerSupport";
 import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import TransferStart from "./pages/TransferStart";
 import Transfer from "./pages/Transfer";
@@ -49,7 +50,8 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Index />} />
                <Route path="/auth" element={<AuthWithOTP />} />
                <Route path="/my-account" element={<MyAccount />} />
             <Route path="/transfer/start" element={<TransferStart />} />

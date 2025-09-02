@@ -44,6 +44,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         setSession(session);
         setUser(session.user);
+        
+        // Send welcome message after login
+        setTimeout(() => {
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('sendWelcomeMessage', { 
+              detail: { userId: session.user.id }
+            }));
+          }
+        }, 1000);
       }
       
       setLoading(false);

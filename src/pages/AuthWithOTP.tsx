@@ -71,26 +71,21 @@ const AuthWithOTP = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Generate and send OTP
-    const otp = generateOTP();
-    const result = await sendOTPEmail(loginData.email, otp);
+    // Direct login without OTP
+    const { error } = await signIn(loginData.email, loginData.password);
     
-    if (result.success) {
-      const codeToUse = result.otp ?? otp;
-      // Store OTP temporarily (in real app, this would be server-side)
-      sessionStorage.setItem('login_otp', codeToUse);
-      sessionStorage.setItem('login_otp_expires', (Date.now() + 3 * 60 * 1000).toString());
-      setCurrentEmail(loginData.email);
-      setCurrentPassword(loginData.password);
-      setIsDevFallback(result.dev);
-      setLastSentOtp(codeToUse);
-      setShowOTP(true);
+    if (error) {
       toast({
-        title: result.dev ? "OTP Ready (Dev Fallback)" : "OTP Sent",
-        description: result.dev
-          ? "Email delivery is blocked by Resend. Use the code shown on-screen to proceed."
-          : "Please check your email for the verification code",
+        title: "Login Failed",
+        description: error.message,
+        variant: "destructive",
       });
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "You have been logged in successfully.",
+      });
+      navigate('/');
     }
     
     setIsLoading(false);
@@ -316,7 +311,7 @@ const AuthWithOTP = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending OTP..." : "Send Login OTP"}
+                  {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
             </TabsContent>
