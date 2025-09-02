@@ -29,6 +29,61 @@ export default function TransferTIN() {
     return null;
   }
 
+  const processTransfer = async () => {
+    if (!user) return;
+
+    try {
+      // Get current balance
+      const { data: balanceData, error: balanceError } = await supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (balanceError) throw balanceError;
+
+      const currentBalance = parseFloat(balanceData.balance.toString());
+      const transferAmount = parseFloat(transferData.amount.toString());
+
+      if (currentBalance < transferAmount) {
+        throw new Error('Insufficient funds');
+      }
+
+      const newBalance = currentBalance - transferAmount;
+
+      // Update balance
+      await supabase
+        .from('user_balances')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
+
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          type: 'transfer',
+          amount: transferAmount,
+          recipient: transferData.recipient,
+          bank_name: transferData.bankName,
+          account_number: transferData.accountNumber,
+          description: transferData.description || `Transfer to ${transferData.recipient}`,
+          status: 'completed'
+        });
+
+      navigate("/transfer/success", { 
+        state: { 
+          ...transferData, 
+          newBalance,
+          transactionId: `TXN${Date.now()}`
+        } 
+      });
+    } catch (error) {
+      console.error('Transfer error:', error);
+      navigate("/transfer/failure", { state: transferData });
+    }
+  };
+
   const handleSubmit = async () => {
     if (tinNumber.length < 10) {
       toast({
@@ -61,11 +116,11 @@ export default function TransferTIN() {
         return;
       }
 
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Simulate processing time with loader
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Navigate to OTP page
-      navigate("/transfer/otp", { state: { ...transferData, tinNumber } });
+      // Process transfer directly (skip OTP temporarily)
+      await processTransfer();
     } catch (error) {
       console.error('Error validating TIN:', error);
       toast({
@@ -146,9 +201,16 @@ export default function TransferTIN() {
             <button
               onClick={handleSubmit}
               disabled={tinNumber.length < 10 || isLoading}
-              className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground py-3 rounded-md font-medium transition-colors"
+              className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground py-3 rounded-md font-medium transition-colors flex items-center justify-center"
             >
-              {isLoading ? 'Verifying...' : 'Verify'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing Transfer...
+                </>
+              ) : (
+                'Verify'
+              )}
             </button>
           </div>
         </div>

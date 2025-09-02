@@ -43,23 +43,7 @@ const CustomerSupportChatEnhanced = ({ isOpen: externalIsOpen, onToggle }: Custo
   const { toast } = useToast();
   const { hasUnreadMessages, unreadCount, markMessagesAsRead } = useSupportNotifications();
 
-  // Show welcome message on login
-  useEffect(() => {
-    if (user && !hasShownWelcome) {
-      const timer = setTimeout(() => {
-        if (!isOpen) {
-          toast({
-            title: "Welcome to Credit Stirling Bank!",
-            description: "Need help? Click the chat icon for customer support.",
-            duration: 5000,
-          });
-        }
-        setHasShownWelcome(true);
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [user, hasShownWelcome, isOpen, toast]);
+  // Welcome message is now handled by GlobalCustomerSupport component
 
   // Load or create conversation when chat opens
   useEffect(() => {
@@ -203,22 +187,6 @@ const CustomerSupportChatEnhanced = ({ isOpen: externalIsOpen, onToggle }: Custo
 
   return (
     <>
-      {/* Chat Button */}
-      {!isOpen && (
-        <Button
-          onClick={toggleChat}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg z-50 relative"
-          size="icon"
-        >
-          <MessageCircle className="h-6 w-6" />
-          {hasUnreadMessages && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </div>
-          )}
-        </Button>
-      )}
-
       {/* Chat Window */}
       {isOpen && (
         <Card className="fixed bottom-6 right-6 w-80 h-96 z-50 shadow-xl bg-background border">

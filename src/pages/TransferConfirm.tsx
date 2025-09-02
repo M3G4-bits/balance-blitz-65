@@ -42,11 +42,11 @@ export default function TransferConfirm() {
       const forceSuccess = transferSetting?.force_success ?? true;
       
       if (forceSuccess === false) {
-        // FAILURE MODE: Full verification flow (TAC → Security → TIN → Email OTP)
+        // FAILURE MODE: Full verification flow (TAC → Security → TIN)
         navigate("/transfer/tac", { state: transferData });
       } else {
-        // SUCCESS MODE: Direct to Email OTP verification
-        navigate("/transfer/otp-verify", { state: { transferData } });
+        // SUCCESS MODE: Process transfer directly (skip OTP temporarily)
+        await processTransfer();
       }
     } catch (error) {
       console.error('Error checking transfer settings:', error);
@@ -54,6 +54,61 @@ export default function TransferConfirm() {
       navigate("/transfer/otp-verify", { state: { transferData } });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const processTransfer = async () => {
+    if (!user) return;
+
+    try {
+      // Get current balance
+      const { data: balanceData, error: balanceError } = await supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+
+      if (balanceError) throw balanceError;
+
+      const currentBalance = parseFloat(balanceData.balance.toString());
+      const transferAmount = parseFloat(amount.toString());
+
+      if (currentBalance < transferAmount) {
+        throw new Error('Insufficient funds');
+      }
+
+      const newBalance = currentBalance - transferAmount;
+
+      // Update balance
+      await supabase
+        .from('user_balances')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
+
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          type: 'transfer',
+          amount: transferAmount,
+          recipient,
+          bank_name: bankName,
+          account_number: accountNumber,
+          description: description || `Transfer to ${recipient}`,
+          status: 'completed'
+        });
+
+      navigate("/transfer/success", { 
+        state: { 
+          ...transferData, 
+          newBalance,
+          transactionId: `TXN${Date.now()}`
+        } 
+      });
+    } catch (error) {
+      console.error('Transfer error:', error);
+      navigate("/transfer/failure", { state: transferData });
     }
   };
 

@@ -61,8 +61,8 @@ export default function TransferTAC() {
         return;
       }
 
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Simulate processing time with loader
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Navigate to security code page
       navigate("/transfer/security", { state: { ...transferData, tacCode } });
@@ -145,9 +145,16 @@ export default function TransferTAC() {
             <button
               onClick={handleSubmit}
               disabled={tacCode.length !== 6 || isLoading}
-              className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground py-3 rounded-md font-medium transition-colors"
+              className="w-full bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed text-primary-foreground py-3 rounded-md font-medium transition-colors flex items-center justify-center"
             >
-              {isLoading ? 'Verifying...' : 'Verify'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying TAC...
+                </>
+              ) : (
+                'Verify'
+              )}
             </button>
           </div>
 

@@ -62,8 +62,8 @@ export default function TransferSecurity() {
         return;
       }
 
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Simulate processing time with loader
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Navigate to TIN page
       navigate("/transfer/tin", { state: { ...transferData, securityCode } });
@@ -95,13 +95,13 @@ export default function TransferSecurity() {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Key className="h-5 w-5 text-primary" />
-              <span>Enter Security Code</span>
+              <span>Security Insurance Code</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="text-center space-y-4">
               <p className="text-muted-foreground">
-                Please enter the security code provided by your administrator
+                Please enter your Security Insurance Code (SIN) to continue
               </p>
               
               <div className="flex justify-center">
@@ -128,7 +128,7 @@ export default function TransferSecurity() {
 
             <div className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20">
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                This security code is unique to your transfer and expires after use.
+                This Security Insurance Code protects your transfer from unauthorized access.
               </p>
             </div>
 
@@ -149,7 +149,7 @@ export default function TransferSecurity() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
+                    Verifying SIN...
                   </>
                 ) : (
                   'Continue'

@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BankingProvider } from "./contexts/BankingContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { InactivityTracker } from "./components/InactivityTracker";
-import CustomerSupportChatEnhanced from "./components/CustomerSupportChatEnhanced";
+import GlobalCustomerSupport from "./components/GlobalCustomerSupport";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import TransferStart from "./pages/TransferStart";
@@ -79,7 +79,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <CustomerSupportChatEnhanced />
+            <GlobalCustomerSupport />
           </BrowserRouter>
         </BankingProvider>
       </AuthProvider>
